@@ -11,7 +11,7 @@
  
  	<artifactId>TifChannels_to_HPA_PNG_JPEG_Main_JNH</artifactId>
  	<groupId>JNH</groupId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
  
 <!-- Plugin Information -->
     <name>TifChannels_to_HPA_PNG_JPEG_Main_JNH</name>

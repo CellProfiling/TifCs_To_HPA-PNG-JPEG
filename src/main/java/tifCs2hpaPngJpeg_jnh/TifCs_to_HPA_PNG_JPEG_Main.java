@@ -1,7 +1,7 @@
 package tifCs2hpaPngJpeg_jnh;
 
 /** ===============================================================================
-* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.4
+* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.2
 * 
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -15,7 +15,7 @@ package tifCs2hpaPngJpeg_jnh;
 * See the GNU General Public License for more details.
 *  
 * Copyright (C) Jan Niklas Hansen
-* Date: August 07, 2023 (This Version: August 07, 2023)
+* Date: August 07, 2023 (This Version: August 09, 2023)
 *   
 * For any questions please feel free to contact me (jan.hansen@scilifelab.se).
 * =============================================================================== */
@@ -40,7 +40,7 @@ import ij.plugin.PlugIn;
 public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	// Name variables
 	static final String PLUGINNAME = "TifChannels_to_HPA_PNG_JPEG_Main_JNH";
-	static final String PLUGINVERSION = "0.0.1";
+	static final String PLUGINVERSION = "0.0.2";
 
 	// Fix fonts
 	static final Font SuperHeadingFont = new Font("Sansserif", Font.BOLD, 16);
@@ -127,8 +127,11 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 
 		gd.setInsets(10,0,0);	gd.addMessage("Enhancement settings", SubHeadingFont);
 		gd.setInsets(0,0,0);		gd.addCheckbox("Autoadjust channel intensities", autoAdjustIntensities);
+		gd.setInsets(0,0,0);		gd.addMessage("If autoadjust function is used, for each individual image and channel, the 99.999% percentile is determined and", InstructionsFont);
+		gd.setInsets(-5,0,0);		gd.addMessage("set as the maximum display value to rescale the look up tables to a reasonable range. If the 99.999% percentile is", InstructionsFont);
+		gd.setInsets(-5,0,0);		gd.addMessage("smaller than 20000.0, the maximum display value is set to be 20000.0 to avoid overamplification of signals in empty", InstructionsFont);
+		gd.setInsets(-5,0,0);		gd.addMessage("images. Also, when the autoadjust function is activated, the minimum display value is automatically set to 0.0.", InstructionsFont);
 		
-
 		gd.setInsets(10,0,0);	gd.addMessage("Channel assignments", SubHeadingFont);
 		gd.setInsets(0,0,0);		gd.addMessage("Specify here the file-endings for the individual channel .tif files", InstructionsFont);
 		
@@ -351,10 +354,10 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 					cImp.setDisplayRange(impYellow.getDisplayRangeMin(),impYellow.getDisplayRangeMax());
 					
 					if(autoAdjustIntensities) {
-						autoAdjustDisplayRange(cImp,1);	
-						autoAdjustDisplayRange(cImp,2);
-						autoAdjustDisplayRange(cImp,3);
-						autoAdjustDisplayRange(cImp,4);					
+						autoAdjustDisplayRange(cImp,1, 20000.0);	
+						autoAdjustDisplayRange(cImp,2, 20000.0);
+						autoAdjustDisplayRange(cImp,3, 20000.0);
+						autoAdjustDisplayRange(cImp,4, 20000.0);					
 					}
 					
 					newFilePath = currFolder.getAbsolutePath();
@@ -419,9 +422,12 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	/**
 	 * @param: 0 < channel <= nr of channels
 	 * */
-	private void autoAdjustDisplayRange(CompositeImage imp, int channel) {
+	private void autoAdjustDisplayRange(CompositeImage imp, int channel, double minimumMaxValue) {
 		imp.setC(channel);
 		double max = getMinMaxPercentInImage(imp, channel, 0.001) [1];
+		if(max < minimumMaxValue) {
+			max = minimumMaxValue;
+		}
 		imp.setDisplayRange(0.0, max);
 		
 		if(diagnosisLogging) {
