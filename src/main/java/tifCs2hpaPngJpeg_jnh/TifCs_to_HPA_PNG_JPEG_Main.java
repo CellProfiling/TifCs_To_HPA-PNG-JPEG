@@ -1,7 +1,7 @@
 package tifCs2hpaPngJpeg_jnh;
 
 /** ===============================================================================
-* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.2
+* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.3
 * 
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -15,7 +15,7 @@ package tifCs2hpaPngJpeg_jnh;
 * See the GNU General Public License for more details.
 *  
 * Copyright (C) Jan Niklas Hansen
-* Date: August 07, 2023 (This Version: August 09, 2023)
+* Date: August 07, 2023 (This Version: August 14, 2023)
 *   
 * For any questions please feel free to contact me (jan.hansen@scilifelab.se).
 * =============================================================================== */
@@ -40,7 +40,7 @@ import ij.plugin.PlugIn;
 public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	// Name variables
 	static final String PLUGINNAME = "TifChannels_to_HPA_PNG_JPEG_Main_JNH";
-	static final String PLUGINVERSION = "0.0.2";
+	static final String PLUGINVERSION = "0.0.3";
 
 	// Fix fonts
 	static final Font SuperHeadingFont = new Font("Sansserif", Font.BOLD, 16);
@@ -76,21 +76,23 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			+ System.getProperty("file.separator");
 	
 	boolean outputPNGs = false, outputJPGs = true, autoAdjustIntensities = true;
+	boolean selectChannelOutputs = false;
 	
 	String greenFileEnd = "C3.tif", blueFileEnd = "C0.tif", redFileEnd = "C4.tif", yellowFileEnd = "C1.tif";
 	
 	boolean diagnosisLogging = false;	
+
+	boolean blueOut = true, greenOut = true, redOut = true, yellowOut = true,
+			blue_greenOut = true, blue_redOut = true, blue_yellowOut = true,
+			green_redOut = true, green_yellowOut = true, 
+			red_yellowOut = true, 
+			blue_green_redOut = true, blue_red_yellowOut = true, blue_green_yellowOut = true,
+			blue_green_red_yellowOut = true;
+	
 	// -----------------define params for Dialog-----------------
 	
 	@Override
 	public void run(String arg) {
-
-		//TODO Remove
-		inPath = "C:"+ System.getProperty("file.separator") +"Users"+ System.getProperty("file.separator") +"jan.hansen"+ System.getProperty("file.separator") 
-			+"Desktop"+ System.getProperty("file.separator") +"Example_Tif"+ System.getProperty("file.separator");
-		outPath = "C:"+ System.getProperty("file.separator") +"Users"+ System.getProperty("file.separator") +"jan.hansen"+ System.getProperty("file.separator") 
-			+ "Desktop"+ System.getProperty("file.separator") +"Example_JPG"+ System.getProperty("file.separator");
-
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 		// ---------------------------------INIT JOBS----------------------------------
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -123,7 +125,9 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		
 		gd.setInsets(0,0,0);		gd.addCheckbox("Output pngs", outputPNGs);
 		gd.setInsets(0,0,0);		gd.addCheckbox("Output jpegs", outputJPGs);
-		
+		gd.setInsets(0,0,0);		gd.addCheckbox("Customize channel overlays to be created and saved (extra settings dialog is displayed after this)",
+				selectChannelOutputs);
+				
 
 		gd.setInsets(10,0,0);	gd.addMessage("Enhancement settings", SubHeadingFont);
 		gd.setInsets(0,0,0);		gd.addCheckbox("Autoadjust channel intensities", autoAdjustIntensities);
@@ -139,8 +143,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		gd.setInsets(0,0,0);		gd.addStringField("Blue channel - file ending (before .tif(f)):", blueFileEnd, 30);
 		gd.setInsets(0,0,0);		gd.addStringField("Red channel - file ending (before .tif(f)):", redFileEnd, 30);
 		gd.setInsets(0,0,0);		gd.addStringField("Yellow channel - file ending (before .tif(f)):", yellowFileEnd, 30);
-		
-		
+				
 		gd.setInsets(10,0,0);	gd.addMessage("Extended modes", SubHeadingFont);
 		gd.setInsets(0,0,0);		gd.addCheckbox("Extended logging for diagnosis of errors", diagnosisLogging);		
 				
@@ -152,6 +155,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		outPath = gd.getNextString();
 		outputPNGs = gd.getNextBoolean();
 		outputJPGs = gd.getNextBoolean();
+		selectChannelOutputs = gd.getNextBoolean();
 		autoAdjustIntensities = gd.getNextBoolean();		
 		greenFileEnd = gd.getNextString();
 		blueFileEnd = gd.getNextString();
@@ -162,6 +166,54 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		//read and process variables--------------------------------------------------
 		if (gd.wasCanceled()) return;
 				
+		if(selectChannelOutputs){
+			GenericDialog gd2 = new GenericDialog(PLUGINNAME + " - set parameters");	
+
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Blue only", blueOut);
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Green only", greenOut);
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Red only", redOut);
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Yellow only", yellowOut);
+			
+			gd2.setInsets(5,0,0);		gd2.addCheckbox("Blue & Green", blue_greenOut);
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Blue & Red", blue_redOut);
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Blue & Yellow", blue_yellowOut);
+			
+			gd2.setInsets(5,0,0);		gd2.addCheckbox("Green & Red", green_redOut);
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Green & Yellow", green_yellowOut);
+			
+			gd2.setInsets(5,0,0);		gd2.addCheckbox("Red & Yellow", red_yellowOut);
+			
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Blue & Green & Red", blue_green_redOut);
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Blue & Red & Yellow", blue_red_yellowOut);
+			gd2.setInsets(0,0,0);		gd2.addCheckbox("Blue & Green & Yellow", blue_green_yellowOut);
+			
+			gd2.setInsets(5,0,0);		gd2.addCheckbox("Blue & Green & Red & Yellow", blue_green_red_yellowOut);
+						
+			gd2.showDialog();
+			
+			blueOut = gd2.getNextBoolean();
+			greenOut = gd2.getNextBoolean();
+			redOut = gd2.getNextBoolean();
+			yellowOut = gd2.getNextBoolean();
+			
+			blue_greenOut = gd2.getNextBoolean();
+			blue_redOut = gd2.getNextBoolean();
+			blue_yellowOut = gd2.getNextBoolean();
+			
+			green_redOut = gd2.getNextBoolean();
+			green_yellowOut = gd2.getNextBoolean();
+			
+			red_yellowOut = gd2.getNextBoolean();
+			
+			blue_green_redOut = gd2.getNextBoolean();
+			blue_red_yellowOut = gd2.getNextBoolean();
+			blue_green_yellowOut = gd2.getNextBoolean();
+			
+			blue_green_red_yellowOut = gd2.getNextBoolean();
+						
+			if (gd2.wasCanceled()) return;
+		}
+		
 		// add progressDialog
 		progress = new ProgressDialog(new String[]{"" + new File(inPath).getName()});
 		progress.setLocation(0, 0);
@@ -457,34 +509,75 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	}
 	
 	private void outputImage (CompositeImage imp, String fileType, String fileEnding, String dir, String namePrefix) {
-		imp.setActiveChannels("1111");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_red_green_yellow" + fileEnding);
+		if(greenOut) {
+			imp.setActiveChannels("1000");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_green" + fileEnding);			
+		}
 		
-		imp.setActiveChannels("1110");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_red_green" + fileEnding);
+		if(blueOut) {
+			imp.setActiveChannels("0100");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue" + fileEnding);
+		}
 
-		imp.setActiveChannels("0111");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_red_yellow" + fileEnding);
+		if(redOut) {
+			imp.setActiveChannels("0010");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_red" + fileEnding);
+		}
 		
-		imp.setActiveChannels("1100");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_green" + fileEnding);
+		if(yellowOut) {
+			imp.setActiveChannels("0001");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_yellow" + fileEnding);			
+		}
 		
-		imp.setActiveChannels("0110");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_red" + fileEnding);
+		if(blue_greenOut) {
+			imp.setActiveChannels("1100");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_green" + fileEnding);			
+		}
 		
-		imp.setActiveChannels("0101");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_yellow" + fileEnding);
+		if (blue_redOut) {
+			imp.setActiveChannels("0110");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_red" + fileEnding);			
+		}
 		
-		imp.setActiveChannels("1000");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_green" + fileEnding);
-		
-		imp.setActiveChannels("0100");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue" + fileEnding);
+		if(blue_yellowOut) {
+			imp.setActiveChannels("0101");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_yellow" + fileEnding);
+		}
 
-		imp.setActiveChannels("0010");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_red" + fileEnding);
+		if(green_redOut) {
+			imp.setActiveChannels("1010");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_red_green" + fileEnding);		
+		}
+
+		if(green_yellowOut) {
+			imp.setActiveChannels("1001");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_green_yellow" + fileEnding);		
+		}
+
+		if(red_yellowOut) {
+			imp.setActiveChannels("0011");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_red_yellow" + fileEnding);		
+		}
+				
+		if(blue_green_redOut) {
+			imp.setActiveChannels("1110");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_red_green" + fileEnding);		
+		}
 		
-		imp.setActiveChannels("0001");
-		IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_yellow" + fileEnding);
+		if(blue_red_yellowOut) {
+			imp.setActiveChannels("0111");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_red_yellow" + fileEnding);
+		}
+		
+		if(blue_green_yellowOut) {
+			imp.setActiveChannels("1101");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_green_yellow" + fileEnding);		
+		}
+		
+		if(blue_green_red_yellowOut) {
+			imp.setActiveChannels("1111");
+			IJ.saveAs(imp, fileType, dir + System.getProperty("file.separator") + namePrefix + "_blue_red_green_yellow" + fileEnding);
+		}	
+		
 	}
 }// end main class
