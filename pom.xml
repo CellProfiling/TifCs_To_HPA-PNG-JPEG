@@ -10,8 +10,8 @@
 	</parent> 
  
  	<artifactId>TifChannels_to_HPA_PNG_JPEG_Main_JNH</artifactId>
- 	<groupId>JNH</groupId>
-    <version>0.0.3-SNAPSHOT</version>
+ 	<groupId>CellProfiling</groupId>
+    <version>0.0.4-SNAPSHOT</version>
  
 <!-- Plugin Information -->
     <name>TifChannels_to_HPA_PNG_JPEG_Main_JNH</name>
