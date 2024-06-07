@@ -394,12 +394,14 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 					}
 					
 					if(autoAdjustIntensities) {
-						autoAdjustDisplayRange(cImp,1, 20000.0);
-						autoAdjustDisplayRange(cImp,2, 20000.0);
-						autoAdjustDisplayRange(cImp,3, 20000.0);
-						autoAdjustDisplayRange(cImp,4, 20000.0);	
+						//TODO adjust all images in one group together!
+						
+						autoAdjustDisplayRange(cImp,1, 10000.0);
+						autoAdjustDisplayRange(cImp,2, 10000.0);
+						autoAdjustDisplayRange(cImp,3, 10000.0);
+						autoAdjustDisplayRange(cImp,4, 10000.0);	
 						if(blue_green_red_yellow_whiteOut || whiteOut){
-							//TODO create adjustment for white channel
+							autoAdjustBrightfieldRange(cImp,5);
 						}			
 					}
 					
@@ -586,6 +588,21 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		
 		if(diagnosisLogging) {
 			progress.notifyMessage("Adjusted channel " + channel + " to [" + 0.0 + "," + max 
+				+ "] by determining percentile 0.0001 - in image processor: [" + imp.getProcessor().getMin() + "," + imp.getProcessor().getMax() + "]", ProgressDialog.LOG);
+		}
+	}
+	
+	/**
+	 * @param: 0 < channel <= nr of channels
+	 * */
+	private void autoAdjustBrightfieldRange(CompositeImage imp, int channel) {
+		imp.setC(channel);
+		double [] minMax = getMinMaxPercentInImage(imp, channel, 0.001);
+		
+		imp.setDisplayRange(minMax [0], minMax [1]);
+		
+		if(diagnosisLogging) {
+			progress.notifyMessage("Adjusted channel " + channel + " to [" + minMax [0] + "," + minMax [1] 
 				+ "] by determining percentile 0.0001 - in image processor: [" + imp.getProcessor().getMin() + "," + imp.getProcessor().getMax() + "]", ProgressDialog.LOG);
 		}
 	}
