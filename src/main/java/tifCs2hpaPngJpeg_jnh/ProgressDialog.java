@@ -1,7 +1,7 @@
 package tifCs2hpaPngJpeg_jnh;
 
 /**
- * This code was inherited from MotiQ (https://github.com/hansenjn/MotiQ),
+ * This code was inherited from MotiQ (https://github.com/hansenjn/MotiQ) and customized,
  * @author Jan Niklas Hansen
  */
 
@@ -78,6 +78,34 @@ public class ProgressDialog extends javax.swing.JFrame implements ActionListener
 				dataLeft [i] = (i+1) + ": " + dataLeft [i] + ", Series: " + seriesList [i]; 
 			}			
 		}
+		ListeLeft.setListData(dataLeft);
+		taskFraction = 0.0;
+		task = 1;
+	}
+	
+	public void updateTaskList(String [] taskList, String [] seriesList, String seriesPrefix, boolean showOnlySeriesInList) {
+		if(taskList.length != seriesList.length) {
+			IJ.error("File loading error... nSeries != nTasks");
+		}
+		dataLeft = taskList.clone();
+		tasks = taskList.length;
+		for(int i = 0; i < tasks; i++){
+			if(dataLeft[i]!=""){
+				dataLeft [i] = (i+1) + ": " + dataLeft [i] + ", ";
+				if(showOnlySeriesInList) {
+					dataLeft [i] = (i+1) + ": ";
+				}
+				dataLeft [i] +=  seriesPrefix + ": " + seriesList [i]; 
+			}			
+		}
+		ListeLeft.setListData(dataLeft);
+		taskFraction = 0.0;
+		task = 1;
+	}
+	
+	public void updateTaskList(String [] taskList) {
+		dataLeft = taskList.clone();
+		tasks = taskList.length;
 		ListeLeft.setListData(dataLeft);
 		taskFraction = 0.0;
 		task = 1;

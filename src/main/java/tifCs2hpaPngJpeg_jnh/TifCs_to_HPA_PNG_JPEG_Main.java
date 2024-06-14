@@ -15,7 +15,7 @@ package tifCs2hpaPngJpeg_jnh;
 * See the GNU General Public License for more details.
 *  
 * Copyright (C) Jan Niklas Hansen
-* Date: August 07, 2023 (This Version: May 24, 2024)
+* Date: August 07, 2023 (This Version: June 13, 2024)
 *   
 * For any questions please feel free to contact me (jan.hansen@scilifelab.se).
 * =============================================================================== */
@@ -83,7 +83,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	boolean outputPNGs = false, outputJPGs = true, autoAdjustIntensities = true, joinedAdjustment = true;
 	boolean selectChannelOutputs = false;
 	
-	String greenFileEnd = "C3.tif", blueFileEnd = "C0.tif", redFileEnd = "C4.tif", yellowFileEnd = "C1.tif", whiteFileEnd = "C2.tif";
+	String greenFileEnd = "C03.ome.tif", blueFileEnd = "C00.ome.tif", redFileEnd = "C04.ome.tif", yellowFileEnd = "C01.ome.tif", whiteFileEnd = "C02.ome.tif";
 	
 	boolean diagnosisLogging = false;	
 
@@ -99,12 +99,6 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	
 	@Override
 	public void run(String arg) {
-		//TODO Remove
-		inPath = "C:"+ System.getProperty("file.separator") +"Users"+ System.getProperty("file.separator") +"jan.hansen"+ System.getProperty("file.separator") 
-			+"Desktop"+ System.getProperty("file.separator") +"ExampleTifs"+ System.getProperty("file.separator");
-		outPath = "C:"+ System.getProperty("file.separator") +"Users"+ System.getProperty("file.separator") +"jan.hansen"+ System.getProperty("file.separator") 
-			+ "Desktop"+ System.getProperty("file.separator") +"ExampleJpegs"+ System.getProperty("file.separator");
-
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 		// ------------------------------INITIALIZATIONS-------------------------------
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -253,7 +247,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	    	odTable = new OpenDialog("Open table file with columns Antibody,Protein,Plate,Well", null);
 	    	tableFileDir = odTable.getDirectory();
     		tableFileName = odTable.getFileName();
-    		adjustmentLookUpTable = getTableFromCSV(tableFileDir + System.getProperty("file.separator") + tableFileName);
+    		adjustmentLookUpTable = getTableFromCSV(tableFileDir + System.getProperty("file.separator") + tableFileName, diagnosisLogging);
     		if(adjustmentLookUpTable.length==0) {
     			return;
     		}
@@ -263,7 +257,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
     			for(int i = 0; i < adjustmentLookUpTable[0].length; i++) {
     				out = "";
     				for(int n = 0; n < adjustmentLookUpTable.length; n++) {
-    					out += adjustmentLookUpTable[0][i] + "	";
+    					out += adjustmentLookUpTable[n][i] + "	";
     				}
     				out = out.substring(0,out.length()-1);
             		IJ.log(out);
@@ -290,7 +284,42 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 		
 		LinkedList<String> allFiles = validateFoldersAndCreateFileList(inPath);
-
+		if(allFiles.size()==0) {
+			IJ.error("Cannot process input folder. Problem with input folder! No folders detected!\n"
+					+ "Are you sure the folder structure you loaded under input path is as follows?\n"
+					+ "<InputPath>|<well id, e.g., C5>|<imagefolder>|<tif files for this image>\n"
+					+ "AND\n"
+					+ "Are you sure you set the filename ending parameters correctly for all channels?");
+		}
+		
+		if(joinedAdjustment) {
+			allFiles = correctFolderListForGroupAdjustment(allFiles, adjustmentLookUpTable, progress, diagnosisLogging);
+			if(allFiles.size()==0) {
+				return;
+			}
+			
+			String fileList [] = new String [allFiles.size()];
+			String seriesList [] = new String [allFiles.size()];
+			String tempWellID;
+			for(int f = 0; f < fileList.length; f++) {
+				fileList [f] = allFiles.get(f);
+				
+				tempWellID = allFiles.get(f);
+				
+				while(tempWellID.substring(tempWellID.length()-1).equals(System.getProperty("file.separator"))) {
+					tempWellID = tempWellID.substring(0, tempWellID.length()-1);
+				}
+				
+				// Extracting the well id in the filepath (only works if file path is: <InputPath>|<well id, e.g., C5>|<imagefolder>|<tif files for this image>
+				tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
+				tempWellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator"))+1);
+				
+				seriesList [f] = tempWellID;
+			}
+			
+			progress.updateTaskList(fileList, seriesList,"Adjustment Group", true);
+		}
+		
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 		// ---------------------------------RUN TASKS----------------------------------
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -539,7 +568,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 					} else if (new File(currFolder.getAbsolutePath() + System.getProperty("file.separator") + fileList[f]).isDirectory()){
 						FoldersToCheck.add(currFolder.getAbsolutePath() + System.getProperty("file.separator") + fileList[f]);
 						if(diagnosisLogging) {
-							progress.notifyMessage("Folder added to todo list: " + currFolder.getPath() + System.getProperty("file.separator") + fileList[f], ProgressDialog.LOG);
+							progress.notifyMessage("Folder added to to-screen list: " + currFolder.getPath() + System.getProperty("file.separator") + fileList[f], ProgressDialog.LOG);
 						}						
 					} else {
 						if(diagnosisLogging) {
@@ -549,7 +578,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 				}
 				
 				//Add if contains all files needed
-				if(green && blue && red && yellow && skip == false) {
+				if((green && blue && red && yellow) && skip == false) {
 					if((blue_green_red_yellow_whiteOut || whiteOut) && !white) {
 						progress.notifyMessage("Skipped a folder since missing brightfield image file ending with " + whiteFileEnd + " (Folder: " + currFolder.getPath() + ").", ProgressDialog.NOTIFICATION);
 					}else {
@@ -558,6 +587,14 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 							progress.notifyMessage("Added folder to process list: " + currFolder.getPath() + "", ProgressDialog.LOG);
 						}
 					}
+				}else if(diagnosisLogging) {
+					progress.notifyMessage("Did not add folder to process list since missing file(s) (code:" 
+							+ "R-" + red
+							+ "_G-" + green
+							+ "_B-" + blue
+							+ "_Y-" + yellow
+							+ "_SKIP-" + skip
+							+ "):" + currFolder.getPath() + "", ProgressDialog.LOG);
 				}
 				
 				//Remove last element to move on to next folder in list
@@ -573,6 +610,135 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		}
 		return allFiles;
 	}
+	
+	/**
+	 * This method checks the file list for where the file belongs
+	 * If a file is in the list already belonging to the same adjustment group, it will skip it.
+	 * @param allFiles: the list of filepaths
+	 * @param adjustmentLookUpTable: the look up table loaded to determine adjustment group.
+	 * @param diagnosisLogging: If true, progress information is logged.
+	 * @return LinkedList<String> that is input as @param allFiles, but with only the first file per adjustment group remaining
+	 * @return an empty LinkedList<String> if an error occurs during processing of file paths.
+	 */
+	private static LinkedList<String> correctFolderListForGroupAdjustment(LinkedList<String> allFiles,
+			String[][] adjustmentLookUpTable, ProgressDialog progress, boolean diagnosisLogging) {
+		String tempWellID, adjustmentGroup;
+		
+		ArrayList<String> adjustmentGroups = new ArrayList<String> (allFiles.size());
+
+		
+		for (int f = 0; f < allFiles.size(); f++) { 
+			tempWellID = allFiles.get(f);
+			
+			while(tempWellID.substring(tempWellID.length()-1).equals(System.getProperty("file.separator"))) {
+				tempWellID = tempWellID.substring(0, tempWellID.length()-1);
+//				if(diagnosisLogging) {
+//					progress.notifyMessage("LOG: Shortening file name to " + tempWellID + " (last char: " + tempWellID.substring(tempWellID.length()-1) 
+//					+ ") for file " + allFiles.get(f) + "",ProgressDialog.LOG);
+//				}
+				if(tempWellID.length()==0) {
+					new WaitForUserDialog("Failed to process the list of input folders.\n"
+							+ "Are you sure the folder structure you loaded under input path is as follows?\n"
+							+ "<InputPath>|<well id, e.g., C5>|<imagefolder>|<tif files for this image>").show();
+					allFiles.clear();
+					return allFiles;
+				}
+			}
+			
+			// Extracting the well id in the filepath (only works if file path is: <InputPath>|<well id, e.g., C5>|<imagefolder>|<tif files for this image>
+			tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
+			tempWellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator"))+1);
+
+//			if(diagnosisLogging) {
+//				progress.notifyMessage("LOG: Checking for well " + tempWellID + " in look-up-table (" + allFiles.get(f) + ")",ProgressDialog.LOG);
+//			}
+			
+			adjustmentGroup = "";
+			for(int lut = 0; lut < adjustmentLookUpTable[0].length; lut++) { 
+				if(adjustmentLookUpTable[0][lut].equals(tempWellID)) {
+					adjustmentGroup = adjustmentLookUpTable[1][lut];
+					if(diagnosisLogging) {
+						progress.notifyMessage("LOG: Found well " + tempWellID + " in look-up-table and retrieved adjustment group " 
+								+ adjustmentGroup + " for it (" + allFiles.get(f) + ")",ProgressDialog.LOG);
+					}
+					break;
+				}
+			}
+			
+			if(adjustmentGroup.equals("")) {
+				progress.notifyMessage("WARNING: Need to skip file since could not identify well / adjustment group for file with well ID " 
+						+ tempWellID + " (file path: " + allFiles.get(f) + ")!",ProgressDialog.NOTIFICATION);
+			}
+			
+			if(adjustmentGroups.size() == 0) {
+				//Create first element
+				adjustmentGroups.add(adjustmentGroup);
+				if(diagnosisLogging) {
+					progress.notifyMessage("LOG: Adding file number" + (f+1) + " since adjustment group " 
+							+ adjustmentGroup + " not yet in list (" + allFiles.get(f) + ")",ProgressDialog.LOG);	
+				}
+			}else {
+				//Search whether adjustment group has been already added to list - if yes, remove the file from list, since adjustment group is listed already!
+				for(int aG = 0; aG < adjustmentGroups.size(); aG++) {
+					if(adjustmentGroup.equals(adjustmentGroups.get(aG))) {
+						if(diagnosisLogging) {
+							progress.notifyMessage("LOG: Will remove file number " + (f+1) + " since found adjustment group " 
+									+ adjustmentGroup + " in list (" + allFiles.get(f) + ")",ProgressDialog.LOG);
+						}
+						allFiles.remove(f);
+						f--;
+						break;
+					}else if((aG+1) == adjustmentGroups.size()) {
+						adjustmentGroups.add(adjustmentGroup);
+						if(diagnosisLogging) {
+							progress.notifyMessage("LOG: Adding file number" + (f+1) + " since adjustment group " 
+									+ adjustmentGroup + " not yet in list (" + allFiles.get(f) + ")",ProgressDialog.LOG);	
+						}
+						break;
+					}				
+				}	
+			}
+				
+		}
+		
+		if(diagnosisLogging && adjustmentGroups.size() == allFiles.size()) {
+			IJ.log("###################################");
+			IJ.log("#       LISTS AFTER REMOVAL       #");
+			IJ.log("###################################");
+			IJ.log("AdjustmentGroup	FilePath");
+			
+			for(int aG = 0; aG < adjustmentGroups.size(); aG++) {
+				IJ.log(adjustmentGroups.get(aG) + "	" + allFiles.get(aG));
+			}
+			
+			IJ.log("###################################");
+		}
+		
+		if(adjustmentGroups.size() != allFiles.size()) {
+			IJ.log("###################################");
+			IJ.log("#       LISTS AFTER REMOVAL       #");
+			IJ.log("###################################");
+			IJ.log("AdjustmentGroups");
+			
+			for(int aG = 0; aG < adjustmentGroups.size(); aG++) {
+				IJ.log(adjustmentGroups.get(aG));
+			}
+			
+			IJ.log("");
+			IJ.log("All files");
+			for(int f = 0; f < allFiles.size(); f++) {
+				IJ.log(allFiles.get(f));
+			}
+			
+			IJ.log("###################################");
+			
+			new WaitForUserDialog("PROBLEM! files list and adjustment list lengths did not match!\n"
+					+ "Contact developer for trouble shooting and provide developer with full content of LOG window!").show();
+		}
+		
+		return allFiles;
+	}
+
 	
 	
 	/**
@@ -711,7 +877,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	}
 	
 
-	private static String [][] getTableFromCSV(String filePath){
+	private static String [][] getTableFromCSV(String filePath, boolean diagnosisLogging){
 		try {
 			FileReader fr = new FileReader(new File(filePath));
 			BufferedReader br = new BufferedReader(fr);
@@ -731,12 +897,20 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			br.close();
 			fr.close();
 			
-			int nrOfCols = getNumberOfPatternsInString(lines.get(0),",")+1;			
+			if(lines.size() == 0) {
+				IJ.error("Processing failed - loaded table file contained 0 lines!\nMake sure to load a comma-delimited, intact csv file!");
+				return new String [0][0];
+			}
+			
+			int nrOfCols = getNumberOfPatternsInString(lines.get(0),",")+1;
+			if(diagnosisLogging) {
+				IJ.log("Found " + nrOfCols + " in adjustment file based on line content '" + lines.get(0) + "'");
+			}
 			String [][] out = new String [nrOfCols][lines.size()];
 			
 			for(int i = 0; i < out[0].length; i++) {
 				line = lines.get(i);
-				for(int n = nrOfCols-1; n > 0; n++) {
+				for(int n = nrOfCols-1; n > 0; n--) {
 					out [n][i] = line.substring(line.lastIndexOf(",")+1);
 					line = line.substring(0, line.lastIndexOf(","));
 				}
