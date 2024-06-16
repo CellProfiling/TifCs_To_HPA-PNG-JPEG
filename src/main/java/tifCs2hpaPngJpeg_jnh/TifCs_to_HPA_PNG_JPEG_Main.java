@@ -109,16 +109,6 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 
 	@Override
 	public void run(String arg) {
-		// TODO Remove
-		inPath = "C:" + System.getProperty("file.separator") + "Users" + System.getProperty("file.separator")
-				+ "jnhansen" + System.getProperty("file.separator") + "Desktop" + System.getProperty("file.separator")
-				+ "ExampleTifs" + System.getProperty("file.separator");
-		inPath = "E:" + System.getProperty("file.separator") + "OME Out" + System.getProperty("file.separator")
-				+ "B2AI-2024-3" + System.getProperty("file.separator");
-		outPath = "C:" + System.getProperty("file.separator") + "Users" + System.getProperty("file.separator")
-				+ "jnhansen" + System.getProperty("file.separator") + "Desktop" + System.getProperty("file.separator")
-				+ "ExOut" + System.getProperty("file.separator");
-
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 		// ------------------------------INITIALIZATIONS-------------------------------
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
