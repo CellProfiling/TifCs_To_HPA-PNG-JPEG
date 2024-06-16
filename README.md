@@ -2,18 +2,20 @@
 FIJI plugin that reads folders with single-channel tif files and outputs an identical file system with PNGs and JPEGs in HPA-Style. 
 
 So this plugin ...
-- ... reads a directory containing directories with single-channel .tif files (one directory per multi-channel image)
+- ... reads a directory containing directories with single-channel .tif files (one directory per multi-channel image (slice)), e.g., coming from [the plugin creating .ome.tif files out of OPERA files](https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF) or from [the plugin creating memento-ready .tif files out of .lif files](https://github.com/CellProfiling/Sp8-Lif_To_Memento).
 - ... outputs jpeg (or png) files of single channels or merged channels as downloadable from the HPA, such as:
    - https://images.proteinatlas.org/115/672_E2_1_blue_red_green.jpg
    - https://images.proteinatlas.org/115/672_E2_1_green.jpg
-- ... allows to use an un-build intensity-scaling function to provide best conversion from 16-bit depth to 8-bit range independently for each channel. This function right now works as follows:
-   - The 99.999 % percentile of all pixel intensities is determined
-   - Intensities are rescaled so that the 99.999% percentile represents the highest displayed intensity value (An intensity of 0 is set to be the lowest intensity value)
-   - If the 99.999 % percentile is smaller than 20,000.0: Intensities are rescaled so that the highest displayed intensity value is 20,000.0 (instead of using the 99.999 % percentile)
+- ... allows to use an un-build intensity-scaling function to provide best conversion from 16-bit depth to 8-bit range independently for each channel. This function - under default settings - works as follows:
+   - The 0.001% and the 99.999 % percentile of all pixel intensities in an image are determined
+   - Intensities are rescaled so that the 0.001% percentile represents the lowest displayed intensity value (= intensity 0 in the Jpeg or PNG file) and the 99.999% percentile represents the highest displayed intensity value (= an intensity of 255 in the Jpeg or PNG file)
+   - If the 99.999 % percentile is smaller than 10,000.0: Intensities are rescaled so that the highest displayed intensity value is 10,000.0 (instead of using the 99.999 % percentile)
+   - All these values (percentile of 99.999% and minimum value of 10,000.0) can be customized using the settings dialog of the plugin.
+   - The plugin allows to determine and apply these "adjustment values" jointly for a set of images.
 
 
 ## Copyright
-(c) 2023, Jan N. Hansen
+(c) 2023-2024, Jan N. Hansen
 
 Contact: jan.hansen (at) scilifelab.se
 
@@ -28,7 +30,7 @@ Imagej/FIJI is freely available for download [here](https://imagej.net/downloads
 The plugin can be installed as follows: 
 - Download the .jar file from the latest release at the [release section](https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/releases).
 <p align="center">
-   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/dfaa6c69-852c-444e-b579-c3d05683605a" width=500>
+   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/9336d0cc-d330-4216-905d-d324e9e5fc39" width=500>
 </p>
 
 - Launch FIJI and install the plugin by drag and drop into the FIJI status bar (red marked region in the screenshot below) 
@@ -50,49 +52,67 @@ The plugin can be installed as follows:
 </p>
 
 ### Using the plugin
-Launch the plugin via ```Plugins>ELL-Plugins>TifChannels to HPA-PNG-JPEG (v0.0.3)```. A dialog will pop up allowing you to select options for processing.
+Launch the plugin via ```Plugins>ELL-Plugins>TifChannels to HPA-PNG-JPEG (v0.0.4)```. A dialog will pop up allowing you to select options for processing.
 
 <p align="center">
-   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/dded2f45-070b-4aa0-940a-8f1f6690a337" width=500>
+   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/8e20eefe-7af3-43d6-adbe-11bc6b95348a" width=500>
 </p>
 
 Now set the settings as explained here:
 
-1. Insert the path to the input folder system with subfolders containing single-channel .tiff images. File systems may, e.g., come from (the plugin creating .ome.tif files out of OPERA files)[https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF] or from (the plugin creating memento-ready .ome.tif files out of .lif files)[https://github.com/CellProfiling/Sp8-Lif_To_Memento].
+1. Insert the path to the input folder system with subfolders containing single-channel .tiff images. File systems may, e.g., come from [the plugin creating .ome.tif files out of OPERA files](https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF) or from [the plugin creating memento-ready .tif files out of .lif files](https://github.com/CellProfiling/Sp8-Lif_To_Memento).
+
 <p align="center">
-   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/7a977e2f-cd1c-48f9-9187-b55f706a9c85">
+   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/7e2957d6-382a-4e75-aafc-52c4645e3387">
 </p>
 
 2. Insert the path to the output folder, where the same subfolder system shall be created but with .jpeg or .png files instead of .tiff files.
+
 <p align="center">
-   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/7e1d9cae-64ed-44f5-8d91-b95a4d099ce0">
+   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/3f905a84-ef9c-4305-82e8-681758995330">
 </p>
 
 3. Decide what output format you would prefer (.jpeg images load faster than .png images in memento).
+
 <p align="center">
-   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/e3810d6d-ee57-47b5-ad49-5061f97c7000">
+   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/b362486f-c4fc-4ce4-a2a9-7e980387a93b">
 </p>
 
 4. Decide whether you simply want to create all kinds of image display (any channel alone plus any channel with other channels combined). If you do not want that, select the following option:
-![image](https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/2d2fedfd-d607-4054-b77f-1fa964c70c99). In turn, a dialog will appear after this dialog and allow you to customize overlays that you want to have created.
+![image](https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/85a26796-a8f7-4b42-94fc-e01cb611f0f7). In turn, a dialog will appear after this dialog and allow you to customize overlays that you want to have created.
+    1. Note, that in the appearing dialog you can also include a white channel into overlays (see orange marks in screenshot below), but this requires that you have a white channel and select accordingly the file name (see point 6 below).
+    2. If you do not have a white channel or do not want to use it, do not select the options including a white channel.
+    3. Info: A white channel can e.g. be a bright-field image, or a transillumination image ("TI") from a confocal image.
+
 <p align="center">
-   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/6b148d36-e360-46c9-a78e-f9d3bb0a02ab">
+   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/d0b345ce-6e87-4ade-bb57-c0274a74b1c1">
 </p>
 
+    
+5. Decide whether you want to adjust the display range ("Brightness / Contrast") of all channel images (this should always be used with 16-bit input images since otherwise these may appear black or dark in the jpeg or png files).
+    1. If you selected this option, you can customize the way that images will be adjusted (e.g., each image individually or jointly adjusting multiple images for best comparability). Also you can set the way that min and max display value are determined (based on intensity percentiles). The settings dialog provides additional instructions for these settings. Note that in chapter ["Example adjustment file"](https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/edit/main/README.md#example-adjustment-file), additional information on the adjustment files (if selected) are presented.
 
-5. Decide whether you want to auto-adjust channels (this should always be used with 16-bit input images since otherwise these may appear black or dark after 8-bit conversion). Note that at this stage the plugin will auto-adjust each field of view individually. So if you recorded multiple images from the same well, it will still adjust each image individually based on the intensities in the image.
 <p align="center">
-   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/5eea0c03-29f4-4921-97da-349e7eabd5ce">
+   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/ea966134-aaf3-4e2d-815d-48bee72e8db4">
 </p>
+
 
 6. Denote what the end of the filename is for each channel color.
+    1. You will only need to make sure the file name for the white channel is correct if you have a white channel and if you include it into overlays (see point 4 above)!
+    2. If you do not have a white channel, just ignore the field here and leave it to default.
+    3. By default, the file name endings in the settings dialog are corresponding to classic filename endings in a folder system created with the plugin [creating tif files out ouf .lif files](https://github.com/CellProfiling/Sp8-Lif_To_Memento) (e.g., channel images are called "C1.tif", "C2.tif", ... . When you process a folder system coming from [the plugin creating .ome.tif files out of OPERA files](https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF) or from (the plugin creating memento-ready .tif files out of .lif files).
+
 <p align="center">
-   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/92e13947-505a-413a-b359-cf39f2de3b0f">
+   <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/63cac6be-89a6-43f8-bea4-a1e50cc92e81">
 </p>
+
 
 7. Press OK!
 
 Now the plugin processes and it tells you when it has processed and created all files.
+
+#### Example adjustment file
+
 
 ### Updating the plugin version
 Download the new version's .jar file from the [release page](https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF/releases). Make sure FIJI is closed - if still open, close it. Next, locate the FIJI software file / folder on your computer and go on below depending on your OS.
@@ -105,4 +125,4 @@ In Mac OS, FIJI is just a software file (FIJI.app). Right click on the FIJI icon
 
 ---
 
-(c) 2023 J.N. Hansen, Cell Profiling group
+(c) 2023-2024 J.N. Hansen, Cell Profiling group
