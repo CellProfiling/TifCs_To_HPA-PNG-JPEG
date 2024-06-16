@@ -100,7 +100,7 @@ Now set the settings as explained here:
 6. Denote what the end of the filename is for each channel color.
     1. You will only need to make sure the file name for the white channel is correct if you have a white channel and if you include it into overlays (see point 4 above)!
     2. If you do not have a white channel, just ignore the field here and leave it to default.
-    3. By default, the file name endings in the settings dialog are corresponding to classic filename endings in a folder system created with the plugin [creating tif files out ouf .lif files](https://github.com/CellProfiling/Sp8-Lif_To_Memento) (e.g., channel images are called "C1.tif", "C2.tif", ... . When you process a folder system coming from [the plugin creating .ome.tif files out of OPERA files](https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF) or from (the plugin creating memento-ready .tif files out of .lif files).
+    3. By default, the file name endings in the settings dialog are corresponding to classic filename endings in a folder system created with the plugin [creating tif files out ouf .lif files](https://github.com/CellProfiling/Sp8-Lif_To_Memento) (e.g., channel images are called "C0.tif", "C1.tif", ... . When you process a folder system coming from [the plugin creating .ome.tif files out of OPERA files](https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF) you will need to change the entered filename endings to "C00.ome.tif", "C01.ome.tif", ... .
 
 <p align="center">
    <img src="https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/assets/27991883/63cac6be-89a6-43f8-bea4-a1e50cc92e81">
@@ -112,7 +112,87 @@ Now set the settings as explained here:
 Now the plugin processes and it tells you when it has processed and created all files.
 
 #### Example adjustment file
+The adjustment file needs to be a comma-delimited csv file with two columns, where in the first column describes a well identifier and the second column describes an adjustment group that should be the same for all well identifiers to be adjusted together.
 
+When applying this plugin to tif files created out ouf .lif files with [this plugin](https://github.com/CellProfiling/Sp8-Lif_To_Memento), folders summarizing image folders will have a certain name given by the csv that you input into the Sp8-Lif_To_Memento plugin.
+- If this table looked, e.g., like this:
+
+```
+Antibody,Protein,Plate,Well
+HPA000427,CSTF2,MyPlate1,A1
+HPA000593,MECP2,MyPlate1,B1
+HPA000704,MTHFD1,MyPlate1,C1
+
+...
+```
+
+- Your adjustment file could look like this (if you want to adjust all images in one well / folder together):
+
+```
+HPA000427_CSTF2,1
+HPA000593_MECP2,2
+HPA000704_MTHFD1,3
+
+...
+```
+
+When applying this plugin to .ome.tif files created out of OPERA files with [this plugin](https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF), folders summarizing image folders will be named by the well coordinate (e.g., 'A1' or 'D6').
+- Accordingly, your adjustment file could look like this if you want to adjust all images in one well together:
+
+```
+A1,1
+A2,2
+A3,3
+A4,4
+A5,5
+
+...
+
+B1,13
+B2,14
+
+...
+
+H12,96
+```
+
+- Or like this, if you want to adjust all images in a row together:
+
+```
+A1,1
+A2,1
+A3,1
+A4,1
+A5,1
+
+...
+
+B1,2
+B2,2
+
+...
+
+H12,8
+```
+
+- Or like this, if you want to adjust all images in a column together:
+
+```
+A1,1
+A2,2
+A3,3
+A4,4
+A5,5
+
+...
+
+B1,1
+B2,2
+
+...
+
+H12,12
+```
 
 ### Updating the plugin version
 Download the new version's .jar file from the [release page](https://github.com/CellProfiling/HPA_Convert_OPERA_To_LIMS-OMETIF/releases). Make sure FIJI is closed - if still open, close it. Next, locate the FIJI software file / folder on your computer and go on below depending on your OS.
