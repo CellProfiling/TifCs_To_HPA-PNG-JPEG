@@ -129,6 +129,7 @@ HPA000704,MTHFD1,MyPlate1,C1
 - Your adjustment file could look like this (if you want to adjust all images in one well / folder together):
 
 ```
+FolderID,AdjustmentGroup
 HPA000427_CSTF2,1
 HPA000593_MECP2,2
 HPA000704_MTHFD1,3
@@ -140,6 +141,7 @@ When applying this plugin to .ome.tif files created out of OPERA files with [thi
 - Accordingly, your adjustment file could look like this if you want to adjust all images in one well together:
 
 ```
+FolderID,AdjustmentGroup
 A1,1
 A2,2
 A3,3
@@ -159,6 +161,7 @@ H12,96
 - Or like this, if you want to adjust all images in a row together:
 
 ```
+FolderID,AdjustmentGroup
 A1,1
 A2,1
 A3,1
@@ -178,6 +181,7 @@ H12,8
 - Or like this, if you want to adjust all images in a column together:
 
 ```
+FolderID,AdjustmentGroup
 A1,1
 A2,2
 A3,3
