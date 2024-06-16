@@ -15,7 +15,7 @@ package tifCs2hpaPngJpeg_jnh;
 * See the GNU General Public License for more details.
 *  
 * Copyright (C) Jan Niklas Hansen
-* Date: August 07, 2023 (This Version: June 14, 2024)
+* Date: August 07, 2023 (This Version: June 15, 2024)
 *   
 * For any questions please feel free to contact me (jan.hansen@scilifelab.se).
 * =============================================================================== */
@@ -30,6 +30,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Locale;
@@ -83,8 +84,11 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	boolean outputPNGs = false, outputJPGs = true, autoAdjustIntensities = true, joinedAdjustment = true;
 	boolean selectChannelOutputs = false;
 
-	String greenFileEnd = "C03.ome.tif", blueFileEnd = "C00.ome.tif", redFileEnd = "C04.ome.tif",
-			yellowFileEnd = "C01.ome.tif", whiteFileEnd = "C02.ome.tif";
+//	String greenFileEnd = "C03.ome.tif", blueFileEnd = "C00.ome.tif", redFileEnd = "C04.ome.tif",
+//			yellowFileEnd = "C01.ome.tif", whiteFileEnd = "C02.ome.tif";
+	
+	String greenFileEnd = "C3.tif", blueFileEnd = "C0.tif", redFileEnd = "C4.tif",
+			yellowFileEnd = "C1.tif", whiteFileEnd = "C2.tif";
 
 	boolean diagnosisLogging = false;
 
@@ -93,6 +97,10 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			blue_green_redOut = true, blue_red_yellowOut = true, blue_green_yellowOut = true,
 			blue_green_red_yellowOut = true, whiteOut = true, blue_green_red_yellow_whiteOut = true;
 
+	double percentage = 0.001;
+	double mergePercentage = 20.0;
+	double minMaxAllowedValue = 10000;
+	
 	// -----------------define params for Dialog-----------------
 
 	@Override
@@ -124,13 +132,13 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		gd.addMessage(
 				"The plugin inputs a folder structure with a folder for each individual image containing single-channel tifs",
 				InstructionsFont);
-		gd.setInsets(0, 0, 0);
+		gd.setInsets(-5, 0, 0);
 		gd.addMessage("and outputs a transformed folder structure with a folder for each individual image containing",
 				InstructionsFont);
-		gd.setInsets(0, 0, 0);
+		gd.setInsets(-5, 0, 0);
 		gd.addMessage("classical single- or multi-channel HPA-style JPEGs and PNGs.", InstructionsFont);
 
-		gd.setInsets(10, 0, 0);
+		gd.setInsets(5, 0, 0);
 		gd.addMessage("I/O Settings", SubHeadingFont);
 
 		gd.setInsets(0, 0, 0);
@@ -147,31 +155,53 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 				"Customize channel overlays to be created and saved (extra settings dialog is displayed after this)",
 				selectChannelOutputs);
 
-		gd.setInsets(10, 0, 0);
+		gd.setInsets(5, 0, 0);
 		gd.addMessage("Enhancement settings", SubHeadingFont);
 		gd.setInsets(0, 0, 0);
 		gd.addCheckbox("Autoadjust channel intensities", autoAdjustIntensities);
 		gd.setInsets(0, 0, 0);
-		gd.addMessage(
-				"If autoadjust function is used, for each individual image and channel, the 99.999% percentile is determined and",
-				InstructionsFont);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"set as the maximum display value to rescale the look up tables to a reasonable range. If the 99.999% percentile is",
-				InstructionsFont);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"smaller than 20000.0, the maximum display value is set to be 20000.0 to avoid overamplification of signals in empty",
-				InstructionsFont);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"images. Also, when the autoadjust function is activated, the minimum display value is automatically set to 0.0.",
-				InstructionsFont);
-
+		gd.addNumericField("-> Intensity percentile (see info below)", percentage, 3);
 		gd.setInsets(0, 0, 0);
-		gd.addCheckbox("Use adjustment file to auto-adjust images together", joinedAdjustment);
-
-		gd.setInsets(10, 0, 0);
+		gd.addNumericField("-> Minimum allowed maximum display value (see info below)", minMaxAllowedValue, 0);
+		gd.setInsets(0, 0, 0);
+		gd.addCheckbox("-> Use adjustment file to auto-adjust images together", joinedAdjustment);
+		gd.setInsets(0, 0, 0);
+		gd.addNumericField("--> Combining percentile (see info below)", mergePercentage, 3);
+		
+		gd.setInsets(0, 0, 0);
+		gd.addMessage(
+				"If autoadjust function is used, for each individual image and channel, the upper and lower X% percentiles (X is determined",
+				InstructionsFont);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"by user parameter 'Intensity percentile' (e.g., if 0.01% is set as 'Intensity percentile', the min display value will be",
+				InstructionsFont);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"determined based on the 0.01% percentile and the maximum display value will be determined based on the 99.99% percentile.",
+				InstructionsFont);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"The 'Combining percentile' parameter determines how the minimum / maximum display value is computed from the percentiles",
+				InstructionsFont);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"of all images in one group (if adjustment 'together' is activated). E.g., when set to 50% the median of all min and max values.",
+				InstructionsFont);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"will be applied. If 20% is selected, the 20% and 80% percentiles will be used to merge the minimum and maximum display values,",
+				InstructionsFont);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"respectively. Use the 'Minimum allowed maximum...' parameter to limit how low the maximum display value is allowed to drop,",
+				InstructionsFont);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"to make sure that negative-staining images are not overenhanced!",
+				InstructionsFont);
+		
+		gd.setInsets(5, 0, 0);
 		gd.addMessage("Channel assignments", SubHeadingFont);
 		gd.setInsets(0, 0, 0);
 		gd.addMessage("Specify here the file-endings for the individual channel .tif files", InstructionsFont);
@@ -188,7 +218,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		gd.addStringField("White channel (Brightfield or TI, only if applicable) - file ending (including .tif(f)):",
 				whiteFileEnd, 30);
 
-		gd.setInsets(10, 0, 0);
+		gd.setInsets(5, 0, 0);
 		gd.addMessage("Extended modes", SubHeadingFont);
 		gd.setInsets(0, 0, 0);
 		gd.addCheckbox("Extended logging for diagnosis of errors", diagnosisLogging);
@@ -203,7 +233,10 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		outputJPGs = gd.getNextBoolean();
 		selectChannelOutputs = gd.getNextBoolean();
 		autoAdjustIntensities = gd.getNextBoolean();
+		percentage = gd.getNextNumber();
+		minMaxAllowedValue = gd.getNextNumber();
 		joinedAdjustment = gd.getNextBoolean();
+		mergePercentage = gd.getNextNumber();
 		greenFileEnd = gd.getNextString();
 		blueFileEnd = gd.getNextString();
 		redFileEnd = gd.getNextString();
@@ -293,15 +326,18 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			// Open a file open dialog to load a csv file containing information on the
 			// wells that should be adjusted together
 			new WaitForUserDialog(
-					"Please open a table .csv file with columns Well,AdjustmentGroup in the following dialog!\n"
-							+ "Make sure there is no duplicate entries in the well column and that you provide only information for one plate (the specific plate analyzed)!\n"
-							+ "The Well needs to be referred to as in the filenames (e.g., 'A1').\n"
-							+ "In adjustment group, use integer numbers ('1','2'). All wells assigned the same number, will be adjusted together.\n"
-							+ "If you want to adjust only by well, just give each well a different adjustment number.")
+					"The plugin assumes a file structure as follows:\n"
+					+ "<InputPath>|<WellID, e.g., 'C5' or 'HPA..._Genename'|<imagefolder>|<z plane folder>|<single channel tif file>\n\n"
+					+ "Please open a table .csv file with columns WellID,AdjustmentGroup in the following dialog!\n"
+					+ "Make sure there is no duplicate entries in the WellID column!\n"
+					+ "The WellID needs to refer to the folder name as explained in the file structure above (e.g., 'A1' if coming from OPERA,\n"
+					+ "or 'Antibody_Gene' if coming from lif files).\n"
+					+ "In adjustment group, use integer numbers ('1','2'). All wells/topfolders assigned the same number, will be adjusted together.\n"
+					+ "If you want to adjust only by well, just give each well a different adjustment number.")
 					.show();
 
 			OpenDialog odTable;
-			odTable = new OpenDialog("Open table file with columns Antibody,Protein,Plate,Well", null);
+			odTable = new OpenDialog("Open table file with columns Well,AdjustmentGroup", null);
 			tableFileDir = odTable.getDirectory();
 			tableFileName = odTable.getFileName();
 			adjustmentLookUpTable = getTableFromCSV(tableFileDir + System.getProperty("file.separator") + tableFileName,
@@ -370,7 +406,8 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 					}
 
 					// Extracting the well id in the filepath (only works if file path is:
-					// <InputPath>|<well id, e.g., C5>|<imagefolder>|<tif files for this image>
+					// <InputPath>|<well id, e.g., C5>|<imagefolder>|<zplanefolders>|<tif files for this image>
+					tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
 					tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
 					tempWellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator")) + 1);
 
@@ -394,243 +431,234 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		// ---------------------------------RUN TASKS----------------------------------
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-		String greenFile = "", blueFile = "", redFile = "", yellowFile = "", whiteFile = "";
+		String greenFile = "";
 		ImagePlus imp, impGreen, impBlue, impRed, impYellow, impWhite = null;
 		CompositeImage cImp;
 		String newFilePath;
 		File outDir;
 
-		String[] subTasksPath, subTasksFileBlue, subTasksFileGreen, subTasksFileRed, subTasksFileYellow, subTasksFileWhite;
-		String msg;
+		String[] subTasksPath, subTasksPathBlue, subTasksPathGreen, subTasksPathRed, subTasksPathYellow, subTasksPathWhite;
+		
 		running: while (continueProcessing) {
 			for (int aG = 0; aG < filesByGroup.size(); aG++) {
 				/**
 				 * Create a list of the tasks ("subTasks") that we need to process and decide on
 				 * together
 				 */
+							
+				logAndUpdateProgrBar("listing " + filesByGroup.get(aG).size() + " subtasks... (adjustment group " + (aG + 1) + " / " + filesByGroup.size() + ")");
 				
-				{// LOGGING
-					msg = "listing " + filesByGroup.get(aG).size() + " subtasks... (adjustment group " + (aG + 1) + " / " + filesByGroup.size() + ")";
-					progress.updateBarText(msg);
-					if(diagnosisLogging) {
-						progress.notifyMessage(msg, ProgressDialog.LOG); 
-					}
-				}
-				
-				subTasksPath = new String[filesByGroup.get(aG).size()];
-				subTasksFileGreen = new String[filesByGroup.get(aG).size()];
-				subTasksFileBlue = new String[filesByGroup.get(aG).size()];
-				subTasksFileRed = new String[filesByGroup.get(aG).size()];
-				subTasksFileYellow = new String[filesByGroup.get(aG).size()];
-				subTasksFileWhite = new String[filesByGroup.get(aG).size()];
+				subTasksPathGreen = new String[filesByGroup.get(aG).size()];
+				subTasksPathBlue = new String[filesByGroup.get(aG).size()];
+				subTasksPathRed = new String[filesByGroup.get(aG).size()];
+				subTasksPathYellow = new String[filesByGroup.get(aG).size()];
+				subTasksPathWhite = new String[filesByGroup.get(aG).size()];
 
 				for(int p = 0; p < filesByGroup.get(aG).size(); p++){
-					subTasksPath [p] = filesByGroup.get(aG).get(p);
-					
-					File currFolder = new File(subTasksPath [p]);
-					String[] fileList = currFolder.list();
-					
+					String[] fileList = new File(filesByGroup.get(aG).get(p)).list();					
 					// Find file path
 					for (int f = 0; f < fileList.length; f++) {
 						if (fileList[f].endsWith(greenFileEnd)) {
-							subTasksFileGreen [p] = fileList[f];
+							subTasksPathGreen [p] = filesByGroup.get(aG).get(p) + System.getProperty("file.separator") + fileList[f];
 						} else if (fileList[f].endsWith(blueFileEnd)) {
-							subTasksFileBlue [p] = fileList[f];
+							subTasksPathBlue [p] = filesByGroup.get(aG).get(p) + System.getProperty("file.separator") + fileList[f];
 						} else if (fileList[f].endsWith(redFileEnd)) {
-							subTasksFileRed [p] = fileList[f];
+							subTasksPathRed [p] = filesByGroup.get(aG).get(p) + System.getProperty("file.separator") + fileList[f];
 						} else if (fileList[f].endsWith(yellowFileEnd)) {
-							subTasksFileYellow [p] = fileList[f];
+							subTasksPathYellow [p] = filesByGroup.get(aG).get(p) + System.getProperty("file.separator") + fileList[f];
 						} else if (blue_green_red_yellow_whiteOut || whiteOut) {
 							if (fileList[f].endsWith(whiteFileEnd)) {
-								subTasksFileWhite [p] = fileList[f];
+								subTasksPathWhite [p] = filesByGroup.get(aG).get(p) + System.getProperty("file.separator") + fileList[f];
 							}
 						}
 					}
 				}
-
+				
 				/**
-				 * TODO
-				 * Iterate over the subTasks to determine the percentile values for adjustments
+				 * Iterate over the subTasks to retrieve upper and lower percentile values
+				 * Sort the percentile values
+				 * Retrieve adjustment values
 				 */
-
+				
+				logAndUpdateProgrBar("determining adjustment values ... (adjustment group " + (aG + 1) + " / " + filesByGroup.size() + ")");
+									
+				double adjValuesGreen [] = getAdjustmentValuesFromGroupedImages(subTasksPathGreen, percentage, mergePercentage);
+				logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Determined adjustment values Green: " + adjValuesGreen [0] + " | " + adjValuesGreen [1]);
+				double adjValuesBlue [] = getAdjustmentValuesFromGroupedImages(subTasksPathBlue, percentage, mergePercentage);
+				logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Determined adjustment values Blue: " + adjValuesBlue [0] + " | " + adjValuesBlue [1]);
+				double adjValuesRed [] = getAdjustmentValuesFromGroupedImages(subTasksPathRed, percentage, mergePercentage);
+				logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Determined adjustment values Red: " + adjValuesRed [0] + " | " + adjValuesRed [1]);
+				double adjValuesYellow [] = getAdjustmentValuesFromGroupedImages(subTasksPathYellow, percentage, mergePercentage);
+				logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Determined adjustment values Yellow: " + adjValuesYellow [0] + " | " + adjValuesYellow [1]);
+				double adjValuesWhite [] = new double [0];
+				if (blue_green_red_yellow_whiteOut || whiteOut) {
+					adjValuesWhite = getAdjustmentValuesFromGroupedImages(subTasksPathWhite, percentage, mergePercentage);
+					logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Determined adjustment values White: " + adjValuesWhite [0] + " | " + adjValuesWhite [1]);
+				}
+				
+				// TODO limit upper value!
+				
 				/**
-				 * TODO
 				 * Apply values and output
 				 */
-
-				/**
-				 * 
-				 * TODO PART BELOW HERE: CUSTOMIZE AND USE IN PREVIOUS TWO TODOS
-				 * 
-				 */
-
-				File currFolder = new File(filesByGroup.get(aG).get(0)); // TODO change 0 to something meaningful!
-				String[] fileList = currFolder.list();
-
-				// Find file path
-				for (int f = 0; f < fileList.length; f++) {
-					if (fileList[f].endsWith(greenFileEnd)) {
-						greenFile = fileList[f];
-					} else if (fileList[f].endsWith(blueFileEnd)) {
-						blueFile = fileList[f];
-					} else if (fileList[f].endsWith(redFileEnd)) {
-						redFile = fileList[f];
-					} else if (fileList[f].endsWith(yellowFileEnd)) {
-						yellowFile = fileList[f];
-					} else if (blue_green_red_yellow_whiteOut || whiteOut) {
-						if (fileList[f].endsWith(whiteFileEnd)) {
-							whiteFile = fileList[f];
+				for(int p = 0; p < filesByGroup.get(aG).size(); p++){
+					try{
+						// Open images
+						impGreen = IJ.openImage(subTasksPathGreen[p]);
+						impBlue = IJ.openImage(subTasksPathBlue[p]);
+						impRed = IJ.openImage(subTasksPathRed[p]);
+						impYellow = IJ.openImage(subTasksPathYellow[p]);
+						if (blue_green_red_yellow_whiteOut || whiteOut) {
+							impWhite = IJ.openImage(subTasksPathWhite[p]);
 						}
-					}
-				}
 
-				if (greenFile.length() > 0 && blueFile.length() > 0 && redFile.length() > 0
-						&& yellowFile.length() > 0) {
-					// Open images
-					impGreen = IJ
-							.openImage(currFolder.getAbsolutePath() + System.getProperty("file.separator") + greenFile);
-					impBlue = IJ
-							.openImage(currFolder.getAbsolutePath() + System.getProperty("file.separator") + blueFile);
-					impRed = IJ
-							.openImage(currFolder.getAbsolutePath() + System.getProperty("file.separator") + redFile);
-					impYellow = IJ.openImage(
-							currFolder.getAbsolutePath() + System.getProperty("file.separator") + yellowFile);
-					if (blue_green_red_yellow_whiteOut || whiteOut) {
-						impWhite = IJ.openImage(
-								currFolder.getAbsolutePath() + System.getProperty("file.separator") + whiteFile);
-					}
+						// Create image
+						if (blue_green_red_yellow_whiteOut || whiteOut) {
+							imp = IJ.createHyperStack("Merged File", impGreen.getWidth(), impGreen.getHeight(), 5, 1, 1,
+									impGreen.getBitDepth());
+						} else {
+							imp = IJ.createHyperStack("Merged File", impGreen.getWidth(), impGreen.getHeight(), 4, 1, 1,
+									impGreen.getBitDepth());
+						}
+						imp.setDisplayMode(IJ.COMPOSITE);
 
-					// Create image
-					if (blue_green_red_yellow_whiteOut || whiteOut) {
-						imp = IJ.createHyperStack("Merged File", impGreen.getWidth(), impGreen.getHeight(), 5, 1, 1,
-								impGreen.getBitDepth());
-					} else {
-						imp = IJ.createHyperStack("Merged File", impGreen.getWidth(), impGreen.getHeight(), 4, 1, 1,
-								impGreen.getBitDepth());
-					}
-					imp.setDisplayMode(IJ.COMPOSITE);
-
-					// Transfer pixels
-					for (int x = 0; x < imp.getWidth(); x++) {
-						for (int y = 0; y < imp.getHeight(); y++) {
-							imp.getStack().setVoxel(x, y, imp.getStackIndex(1, 1, 1) - 1,
-									impGreen.getStack().getVoxel(x, y, 0));
-							imp.getStack().setVoxel(x, y, imp.getStackIndex(2, 1, 1) - 1,
-									impBlue.getStack().getVoxel(x, y, 0));
-							imp.getStack().setVoxel(x, y, imp.getStackIndex(3, 1, 1) - 1,
-									impRed.getStack().getVoxel(x, y, 0));
-							imp.getStack().setVoxel(x, y, imp.getStackIndex(4, 1, 1) - 1,
-									impYellow.getStack().getVoxel(x, y, 0));
-							if (blue_green_red_yellow_whiteOut || whiteOut) {
-								imp.getStack().setVoxel(x, y, imp.getStackIndex(5, 1, 1) - 1,
-										impWhite.getStack().getVoxel(x, y, 0));
+						// Transfer pixels
+						for (int x = 0; x < imp.getWidth(); x++) {
+							for (int y = 0; y < imp.getHeight(); y++) {
+								imp.getStack().setVoxel(x, y, imp.getStackIndex(1, 1, 1) - 1,
+										impGreen.getStack().getVoxel(x, y, 0));
+								imp.getStack().setVoxel(x, y, imp.getStackIndex(2, 1, 1) - 1,
+										impBlue.getStack().getVoxel(x, y, 0));
+								imp.getStack().setVoxel(x, y, imp.getStackIndex(3, 1, 1) - 1,
+										impRed.getStack().getVoxel(x, y, 0));
+								imp.getStack().setVoxel(x, y, imp.getStackIndex(4, 1, 1) - 1,
+										impYellow.getStack().getVoxel(x, y, 0));
+								if (blue_green_red_yellow_whiteOut || whiteOut) {
+									imp.getStack().setVoxel(x, y, imp.getStackIndex(5, 1, 1) - 1,
+											impWhite.getStack().getVoxel(x, y, 0));
+								}
 							}
 						}
-					}
 
-					// Transfer metadata from Green image
-					imp.setCalibration(impGreen.getCalibration());
+						// Transfer metadata from Green image
+						imp.setCalibration(impGreen.getCalibration());
 
-					// Switch to composite image
-					cImp = (CompositeImage) imp.duplicate();
-					cImp.setDisplayMode(IJ.COMPOSITE);
-					cImp.setActiveChannels("11111");
+						// Switch to composite image
+						cImp = (CompositeImage) imp.duplicate();
+						cImp.setDisplayMode(IJ.COMPOSITE);
+						cImp.setActiveChannels("11111");
 
-					// Setup channels
-					cImp.setC(1);
-					IJ.run(cImp, "Green", "");
-					cImp.setDisplayRange(impGreen.getDisplayRangeMin(), impGreen.getDisplayRangeMax());
+						// Setup channels
+						cImp.setC(1);
+						IJ.run(cImp, "Green", "");
+						if (autoAdjustIntensities) {
+							cImp.setDisplayRange(adjValuesGreen[0], adjValuesGreen[1]);							
+						}else {
+							cImp.setDisplayRange(impGreen.getDisplayRangeMin(), impGreen.getDisplayRangeMax());
+						}
 
-					cImp.setC(2);
-					IJ.run(cImp, "Blue", "");
-					cImp.setDisplayRange(impBlue.getDisplayRangeMin(), impBlue.getDisplayRangeMax());
+						cImp.setC(2);
+						IJ.run(cImp, "Blue", "");
+						if (autoAdjustIntensities) {
+							cImp.setDisplayRange(adjValuesBlue[0], adjValuesBlue[1]);							
+						}else {
+							cImp.setDisplayRange(impBlue.getDisplayRangeMin(), impBlue.getDisplayRangeMax());
+						}
 
-					cImp.setC(3);
-					IJ.run(cImp, "Red", "");
-					cImp.setDisplayRange(impRed.getDisplayRangeMin(), impRed.getDisplayRangeMax());
+						cImp.setC(3);
+						IJ.run(cImp, "Red", "");
+						if (autoAdjustIntensities) {
+							cImp.setDisplayRange(adjValuesRed[0], adjValuesRed[1]);							
+						}else {
+							cImp.setDisplayRange(impRed.getDisplayRangeMin(), impRed.getDisplayRangeMax());
+						}
 
-					cImp.setC(4);
-					IJ.run(cImp, "Yellow", "");
-					cImp.setDisplayRange(impYellow.getDisplayRangeMin(), impYellow.getDisplayRangeMax());
+						cImp.setC(4);
+						IJ.run(cImp, "Yellow", "");
+						if (autoAdjustIntensities) {
+							cImp.setDisplayRange(adjValuesYellow[0], adjValuesYellow[1]);							
+						}else {
+							cImp.setDisplayRange(impYellow.getDisplayRangeMin(), impYellow.getDisplayRangeMax());
+						}
 
-					if (blue_green_red_yellow_whiteOut || whiteOut) {
-						cImp.setC(5);
-						IJ.run(cImp, "Grays", "");
-						cImp.setDisplayRange(impWhite.getDisplayRangeMin(), impWhite.getDisplayRangeMax());
-					}
-
-					if (autoAdjustIntensities) {
-						// TODO adjust all images in one group together!
-
-						autoAdjustDisplayRange(cImp, 1, 10000.0);
-						autoAdjustDisplayRange(cImp, 2, 10000.0);
-						autoAdjustDisplayRange(cImp, 3, 10000.0);
-						autoAdjustDisplayRange(cImp, 4, 10000.0);
 						if (blue_green_red_yellow_whiteOut || whiteOut) {
-							autoAdjustBrightfieldRange(cImp, 5);
-						}
-					}
-
-					newFilePath = currFolder.getAbsolutePath();
-					newFilePath = newFilePath.substring(newFilePath.indexOf(inPath) + inPath.length());
-					newFilePath = outPath + System.getProperty("file.separator") + newFilePath;
-					if (diagnosisLogging) {
-						progress.notifyMessage(
-								"Output path for <" + currFolder.getAbsolutePath() + ">:\n" + newFilePath + "",
-								ProgressDialog.LOG);
-					}
-					outDir = new File(newFilePath);
-					if (!outDir.exists()) {
-						outDir.mkdirs();
-					}
-
-					String newFileName = greenFile.substring(0, greenFile.lastIndexOf(greenFileEnd));
-					if (diagnosisLogging) {
-						progress.notifyMessage("Filename post end removal: " + newFileName + "", ProgressDialog.LOG);
-					}
-					if (newFileName.length() == 0) {
-						newFileName = currFolder.getName();
-						if (newFileName.length() < 5) {
-							newFileName = currFolder.getParentFile().getName() + "_" + newFileName;
+							cImp.setC(5);
+							IJ.run(cImp, "Grays", "");
+							if (autoAdjustIntensities) {
+								cImp.setDisplayRange(adjValuesWhite[0], adjValuesWhite[1]);								
+							}else {
+								cImp.setDisplayRange(impWhite.getDisplayRangeMin(), impWhite.getDisplayRangeMax());
+							}
 						}
 
+						newFilePath = filesByGroup.get(aG).get(p);
+						newFilePath = newFilePath.substring(newFilePath.indexOf(inPath) + inPath.length());
+						newFilePath = outPath + System.getProperty("file.separator") + newFilePath;
 						if (diagnosisLogging) {
-							progress.notifyMessage("Filename by director(ies): " + newFileName + "",
+							progress.notifyMessage(
+									"Output path for <" + filesByGroup.get(aG).get(p) + ">:\n" + newFilePath + "",
 									ProgressDialog.LOG);
 						}
-					}
+						outDir = new File(newFilePath);
+						if (!outDir.exists()) {
+							outDir.mkdirs();
+						}
+						
+						greenFile = new File(subTasksPathGreen[p]).getName();
+						String newFileName = greenFile.substring(0, greenFile.lastIndexOf(greenFileEnd));
+						if (diagnosisLogging) {
+							progress.notifyMessage("Filename post end removal: " + newFileName + "", ProgressDialog.LOG);
+						}
+						if (newFileName.length() == 0) {
+							newFileName = new File(filesByGroup.get(aG).get(p)).getName();
+							if (newFileName.length() < 5) {
+								newFileName = new File(filesByGroup.get(aG).get(p)).getParentFile().getName() + "_" + newFileName;
+							}
 
-					if (outputPNGs) {
-						outputImage(cImp, "PNG", ".png", newFilePath, newFileName);
-					}
-					if (outputJPGs) {
-						outputImage(cImp, "JPG", ".jpg", newFilePath, newFileName);
-					}
+							if (diagnosisLogging) {
+								progress.notifyMessage("Filename by director(ies): " + newFileName + "",
+										ProgressDialog.LOG);
+							}
+						}
 
-					imp.changes = false;
-					imp.close();
+						if (outputPNGs) {
+							outputImage(cImp, "PNG", ".png", newFilePath, newFileName);
+						}
+						if (outputJPGs) {
+							outputImage(cImp, "JPG", ".jpg", newFilePath, newFileName);
+						}
 
-					cImp.changes = false;
-					cImp.close();
+						imp.changes = false;
+						imp.close();
 
-				} else {
-					if (diagnosisLogging) {
+						cImp.changes = false;
+						cImp.close();
+
+					} catch(Exception e) {
+						String out = "" + e.getMessage();
+						out += "\n" + e.getCause();
+						for(int err = 0; err < e.getStackTrace().length; err++){
+							out += " \n " + e.getStackTrace()[err].toString();
+						}			
+						
 						progress.notifyMessage(
-								"Incorrect directory discovered and skipped: " + currFolder.getAbsolutePath() + "",
+								"Could not process file " + (aG+1) + " (file path: " + filesByGroup.get(aG).get(p) + ")\nDetailed Error Message:\n" + out,
 								ProgressDialog.NOTIFICATION);
 					}
 				}
+								
 				System.gc();
+				
+				progress.updateBarText("finished!");
+				progress.setBar(1.0);
+				progress.moveTask(0);
 			}
 
 			filesByGroup.clear();
 			filesByGroup = null;
-			processingDone = true;
-			progress.updateBarText("finished!");
-			progress.setBar(1.0);
+			processingDone = true;			
 			break running;
 		}
-		progress.moveTask(0);
 		System.gc();
 	}
 
@@ -809,7 +837,8 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			}
 
 			// Extracting the well id in the filepath (only works if file path is:
-			// <InputPath>|<well id, e.g., C5>|<imagefolder>|<tif files for this image>
+			// <InputPath>|<well id, e.g., C5>|<imagefolder>|<zplanefolders>|<channel tif files for this image>
+			tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
 			tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
 			tempWellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator")) + 1);
 
@@ -831,6 +860,11 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 				}
 			}
 
+//			if (adjustmentGroup.equals("")) {
+				// TODO eventually implement to try in this case to determine tempWell ID again by going up only one folder and not two as before
+				
+//			}
+			
 			if (adjustmentGroup.equals("")) {
 				progress.notifyMessage(
 						"WARNING: Need to skip file since could not identify well / adjustment group for file with well ID "
@@ -921,7 +955,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 					+ imp.getProcessor().getMax() + "]", ProgressDialog.LOG);
 		}
 	}
-
+		
 	/**
 	 * @param: 0 < channel <= nr of channels
 	 */
@@ -956,6 +990,78 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		pixels.clear();
 		pixels = null;
 		return out;
+	}
+	
+	/**
+	 * @param: 0 < channel <= nr of channels
+	 */
+	private double[] getMinMaxPercentInImage(ImagePlus imp, int channel, double percent) {
+		ArrayList<Double> pixels = new ArrayList<Double>(imp.getWidth() * imp.getHeight());
+		for (int x = 0; x < imp.getWidth(); x++) {
+			for (int y = 0; y < imp.getHeight(); y++) {
+				pixels.add(imp.getStack().getVoxel(x, y, imp.getStackIndex(channel, 1, 1) - 1));
+			}
+		}
+		Collections.sort(pixels);
+
+		int indexMin = (int) Math.round((double) pixels.size() * percent / 100.0);
+		int indexMax = (int) Math.round((double) pixels.size() * (100.0 - percent) / 100.0);
+		double out[] = new double[] { pixels.get(indexMin - 1), pixels.get(indexMax - 1) };
+		pixels.clear();
+		pixels = null;
+		return out;
+	}
+	
+	/**
+	 * getPercentageRangesForGroupedImages
+	 * @param filePaths: contains paths as strings to all images for which the upper and lower intensity percentile shall be determined
+	 * @param percentage: determines the percentile to be determined in %
+	 * @return a double array with first dimension of size 2 (index 0 = lower percentile, 1 = upper percentile), and the second dimensions of size of the lengths of input path.
+	 */
+	private double [][] getPercentageRangesForGroupedImages(String[] filePaths, double percentage){		
+		double adjValues [][] = new double [2][filePaths.length];
+		double values [];
+		ImagePlus imp;
+		for(int p = 0; p < filePaths.length; p++){
+			// Open images
+			imp = IJ.openImage(filePaths [p]);
+			values = getMinMaxPercentInImage(imp, 1, percentage);
+			adjValues [0][p] = values [0];
+			adjValues [1][p] = values [1];
+			imp.changes = false;
+			imp.close();
+		}
+		return adjValues;
+	}
+	
+	/**
+	 * getSortedPercentageRangesForGroupedImages will first determine the upper and lower percentiles for all images, and then sort the thereby created lists increasing.
+	 * @param filePaths: contains paths as strings to all images for which the upper and lower intensity percentile shall be determined
+	 * @param percentage: determines the percentile to be determined in %
+	 * @return a double array with first dimension of size 2 (index 0 = lower percentile, 1 = upper percentile), and the second dimensions of size of the lengths of input path.
+	 */
+	private double [][] getSortedPercentageRangesForGroupedImages(String[] filePaths, double percentage){
+		double adjValues [][] = getPercentageRangesForGroupedImages(filePaths, percentage);
+		Arrays.sort(adjValues[0]);
+		Arrays.sort(adjValues[1]);
+		return adjValues;
+	}
+	
+	/**
+	 * This function will first determine the upper and lower percentiles for all images.
+	 * Then it will then sort the thereby created lists (increasing pattern).
+	 * Then it will determine the lower and upper percentiles from the lists of values and return them:
+	 * @param filePaths: contains paths as strings to all images for which the upper and lower intensity percentile shall be determined
+	 * @param percentage: determines the percentiles in % to be determined from the image intensities 
+	 * @param mergingPercentage: determines the percentiles in % to be used to merge all percentile values from all images
+	 * @return a double array with first dimension of size 2 (index 0 = lower percentile, 1 = upper percentile).
+	 */
+	private double [] getAdjustmentValuesFromGroupedImages(String[] filePaths, double percentage, double mergingPercentage) {
+		double adjValues [][] = getSortedPercentageRangesForGroupedImages(filePaths, percentage);
+		
+		return new double [] {adjValues[0][(int)Math.round((double) adjValues[0].length*mergingPercentage/100.0)-1],
+				adjValues[1][(int)Math.round((double) adjValues[1].length*(100.0-mergingPercentage)/100.0)-1]};
+		
 	}
 
 	private void outputImage(CompositeImage imp, String fileType, String fileEnding, String dir, String namePrefix) {
@@ -1108,7 +1214,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			return new String[0][0];
 		}
 	}
-
+	
 	private static int getNumberOfPatternsInString(String text, String pattern) {
 		int n = 0;
 		while (text.contains(pattern)) {
@@ -1120,4 +1226,12 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		}
 		return n;
 	}
+	
+	private void logAndUpdateProgrBar(String msg) {
+		progress.updateBarText(msg);
+		if(diagnosisLogging) {
+			progress.notifyMessage(msg, ProgressDialog.LOG); 
+		}
+	}
+	
 }// end main class
