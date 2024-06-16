@@ -1,5 +1,7 @@
 package tifCs2hpaPngJpeg_jnh;
 
+import java.awt.Color;
+
 /** ===============================================================================
 * TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.4
 * 
@@ -15,7 +17,7 @@ package tifCs2hpaPngJpeg_jnh;
 * See the GNU General Public License for more details.
 *  
 * Copyright (C) Jan Niklas Hansen
-* Date: August 07, 2023 (This Version: June 15, 2024)
+* Date: August 07, 2023 (This Version: June 16, 2024)
 *   
 * For any questions please feel free to contact me (jan.hansen@scilifelab.se).
 * =============================================================================== */
@@ -32,6 +34,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.Locale;
 
@@ -42,11 +45,13 @@ import ij.gui.GenericDialog;
 import ij.gui.WaitForUserDialog;
 import ij.io.OpenDialog;
 import ij.plugin.PlugIn;
+import ij.text.TextPanel;
 
 public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	// Name variables
-	static final String PLUGINNAME = "TifChannels_to_HPA_PNG_JPEG_Main_JNH";
+	static final String PLUGINNAME = "TifChannels_to_HPA_PNG_JPEG";
 	static final String PLUGINVERSION = "0.0.4";
+	static final String PLUGINLINK = "https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/";
 
 	// Fix fonts
 	static final Font SuperHeadingFont = new Font("Sansserif", Font.BOLD, 16);
@@ -82,7 +87,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			+ System.getProperty("file.separator");
 
 	boolean outputPNGs = false, outputJPGs = true, autoAdjustIntensities = true, joinedAdjustment = true;
-	boolean selectChannelOutputs = false;
+	boolean selectChannelOutputs = true;
 
 //	String greenFileEnd = "C03.ome.tif", blueFileEnd = "C00.ome.tif", redFileEnd = "C04.ome.tif",
 //			yellowFileEnd = "C01.ome.tif", whiteFileEnd = "C02.ome.tif";
@@ -95,17 +100,25 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	boolean blueOut = true, greenOut = true, redOut = true, yellowOut = true, blue_greenOut = true, blue_redOut = true,
 			blue_yellowOut = true, green_redOut = true, green_yellowOut = true, red_yellowOut = true,
 			blue_green_redOut = true, blue_red_yellowOut = true, blue_green_yellowOut = true,
-			blue_green_red_yellowOut = true, whiteOut = true, blue_green_red_yellow_whiteOut = true;
+			blue_green_red_yellowOut = true, whiteOut = false, blue_green_red_yellow_whiteOut = false;
 
 	double percentage = 0.001;
 	double mergePercentage = 20.0;
 	double minMaxAllowedValue = 10000;
-	
 	// -----------------define params for Dialog-----------------
 
 	@Override
 	public void run(String arg) {
-		
+		// TODO Remove
+		inPath = "C:" + System.getProperty("file.separator") + "Users" + System.getProperty("file.separator")
+				+ "jnhansen" + System.getProperty("file.separator") + "Desktop" + System.getProperty("file.separator")
+				+ "ExampleTifs" + System.getProperty("file.separator");
+		inPath = "E:" + System.getProperty("file.separator") + "OME Out" + System.getProperty("file.separator")
+				+ "B2AI-2024-3" + System.getProperty("file.separator");
+		outPath = "C:" + System.getProperty("file.separator") + "Users" + System.getProperty("file.separator")
+				+ "jnhansen" + System.getProperty("file.separator") + "Desktop" + System.getProperty("file.separator")
+				+ "ExOut" + System.getProperty("file.separator");
+
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 		// ------------------------------INITIALIZATIONS-------------------------------
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -120,92 +133,99 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 		GenericDialog gd = new GenericDialog(PLUGINNAME + " - set parameters");
-		// show Dialog-----------------------------------------------------------------
+		gd.addHelp(PLUGINLINK);
+//		gd.setBackground(Color.WHITE);
+				
+		//Dialog contents		
 		gd.setInsets(0, 0, 0);
-		gd.addMessage(PLUGINNAME + ", Version " + PLUGINVERSION + ", \u00a9 2023 JN Hansen", SuperHeadingFont);
-		gd.addHelp("https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/");
-
-		gd.setInsets(0, 0, 0);
-		gd.addMessage("Notes", SubHeadingFont);
+		gd.addMessage(PLUGINNAME + ", Version " + PLUGINVERSION + ", \u00a9 2023-2024 JN Hansen", SuperHeadingFont);
+		
 
 		gd.setInsets(0, 0, 0);
 		gd.addMessage(
-				"The plugin inputs a folder structure with a folder for each individual image containing single-channel tifs",
-				InstructionsFont);
+				"This plugin receives a folder structure with a folder for each individual image containing single-channel tifs and outputs an identical",
+				InstructionsFont, Color.DARK_GRAY);
 		gd.setInsets(-5, 0, 0);
-		gd.addMessage("and outputs a transformed folder structure with a folder for each individual image containing",
-				InstructionsFont);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage("classical single- or multi-channel HPA-style JPEGs and PNGs.", InstructionsFont);
-
+		gd.addMessage("folder structure but with classical single- or multi-channel HPA-style JPEGs and PNGs instead of tif images.",
+				InstructionsFont, Color.DARK_GRAY);
+		
 		gd.setInsets(5, 0, 0);
 		gd.addMessage("I/O Settings", SubHeadingFont);
 
 		gd.setInsets(0, 0, 0);
-		gd.addStringField("Input folder: specify filepath here", inPath, 40);
+		gd.addStringField("Input folder (specify filepath here):", inPath, 40);
 		gd.setInsets(0, 0, 0);
-		gd.addStringField("Output folder: specify filepath here", outPath, 40);
-
-		gd.setInsets(0, 0, 0);
-		gd.addCheckbox("Output pngs", outputPNGs);
-		gd.setInsets(0, 0, 0);
-		gd.addCheckbox("Output jpegs", outputJPGs);
-		gd.setInsets(0, 0, 0);
-		gd.addCheckbox(
-				"Customize channel overlays to be created and saved (extra settings dialog is displayed after this)",
-				selectChannelOutputs);
+		gd.addStringField("Output folder (specify filepath here):", outPath, 40);
+		gd.setInsets(-5, 20, 0);
+		gd.addMessage("ATTENTION: Files already existing in output folder may be automatically overwritten by this plugin (if name matches)!",
+				InstructionsFont, Color.RED);
 
 		gd.setInsets(5, 0, 0);
-		gd.addMessage("Enhancement settings", SubHeadingFont);
+		gd.addCheckbox("Generate pngs", outputPNGs);
 		gd.setInsets(0, 0, 0);
-		gd.addCheckbox("Autoadjust channel intensities", autoAdjustIntensities);
+		gd.addCheckbox("Generate jpegs", outputJPGs);
+		gd.setInsets(0, 0, 0);
+		gd.addCheckbox(
+				"Customize channel overlays to be generated (will prompt extra customization dialog after this dialog)",
+				selectChannelOutputs);
+		gd.setInsets(5, 0, 0);
+		gd.addCheckbox("Extended logging for diagnosis / troubleshooting", diagnosisLogging);
+
+		gd.setInsets(5, 0, 0);
+		gd.addMessage("Automatic Display Range Adjustments", SubHeadingFont);
+		gd.setInsets(0, 0, 0);
+		gd.addCheckbox("Adjust intensity display range automatically", autoAdjustIntensities);
 		gd.setInsets(0, 0, 0);
 		gd.addNumericField("-> Intensity percentile (see info below)", percentage, 3);
 		gd.setInsets(0, 0, 0);
 		gd.addNumericField("-> Minimum allowed maximum display value (see info below)", minMaxAllowedValue, 0);
-		gd.setInsets(0, 0, 0);
-		gd.addCheckbox("-> Use adjustment file to auto-adjust images together", joinedAdjustment);
+		gd.setInsets(0, 10, 0);
+		gd.addCheckbox("-> Use adjustment file to auto-adjust images together (will prompt a dialog to select file after this dialog)", joinedAdjustment);
 		gd.setInsets(0, 0, 0);
 		gd.addNumericField("--> Combining percentile (see info below)", mergePercentage, 3);
+
+		gd.setInsets(0, 0, 0);
+		gd.addMessage(
+				"If 'Adjust ... automatically' selected, for each individual image, the upper and lower X% percentiles are determined and applied to",
+				InstructionsFont, Color.DARK_GRAY);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"improve brightness / contrast of the images (X% is controlled by the parameter 'Intensity percentile'; e.g., if 0.01% is set as 'Intensity",
+				InstructionsFont, Color.DARK_GRAY);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"percentile', the min display value will be determined based on the 0.01% percentile and the maximum display value will be determined",
+				InstructionsFont, Color.DARK_GRAY);
+		gd.setInsets(-5, 0, 0);
+		gd.addMessage(
+				"based on the 99.99% percentile).",
+				InstructionsFont, Color.DARK_GRAY);
+		
 		
 		gd.setInsets(0, 0, 0);
 		gd.addMessage(
-				"If autoadjust function is used, for each individual image and channel, the upper and lower X% percentiles (X is determined",
-				InstructionsFont);
+				"Use the 'Minimum allowed maximum...' parameter to limit how low the maximum display value is allowed to drop, to make sure",
+				InstructionsFont, Color.DARK_GRAY);
 		gd.setInsets(-5, 0, 0);
 		gd.addMessage(
-				"by user parameter 'Intensity percentile' (e.g., if 0.01% is set as 'Intensity percentile', the min display value will be",
-				InstructionsFont);
+				"that negative-staining images are not overenhanced!",
+				InstructionsFont, Color.DARK_GRAY);
+		
+		gd.setInsets(0, 0, 0);
+		gd.addMessage(
+				"The 'Combining percentile' parameter determines how the min / max display value is computed from the percentiles of all images in",
+				InstructionsFont, Color.DARK_GRAY);
 		gd.setInsets(-5, 0, 0);
 		gd.addMessage(
-				"determined based on the 0.01% percentile and the maximum display value will be determined based on the 99.99% percentile.",
-				InstructionsFont);
+				"a group (if adjustment 'together' is chosen). E.g., when set to 50% the median will be applied. If 20% is selected, the 20% and 80%",
+				InstructionsFont, Color.DARK_GRAY);
 		gd.setInsets(-5, 0, 0);
 		gd.addMessage(
-				"The 'Combining percentile' parameter determines how the minimum / maximum display value is computed from the percentiles",
-				InstructionsFont);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"of all images in one group (if adjustment 'together' is activated). E.g., when set to 50% the median of all min and max values.",
-				InstructionsFont);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"will be applied. If 20% is selected, the 20% and 80% percentiles will be used to merge the minimum and maximum display values,",
-				InstructionsFont);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"respectively. Use the 'Minimum allowed maximum...' parameter to limit how low the maximum display value is allowed to drop,",
-				InstructionsFont);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"to make sure that negative-staining images are not overenhanced!",
-				InstructionsFont);
+				"percentiles will be used to merge the minimum and maximum display values, respectively.",
+				InstructionsFont, Color.DARK_GRAY);
 		
 		gd.setInsets(5, 0, 0);
-		gd.addMessage("Channel assignments", SubHeadingFont);
-		gd.setInsets(0, 0, 0);
-		gd.addMessage("Specify here the file-endings for the individual channel .tif files", InstructionsFont);
-
+		gd.addMessage("Channel images", SubHeadingFont);
 		gd.setInsets(0, 0, 0);
 		gd.addStringField("Green channel - file ending (including .tif(f)):", greenFileEnd, 30);
 		gd.setInsets(0, 0, 0);
@@ -218,11 +238,6 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		gd.addStringField("White channel (Brightfield or TI, only if applicable) - file ending (including .tif(f)):",
 				whiteFileEnd, 30);
 
-		gd.setInsets(5, 0, 0);
-		gd.addMessage("Extended modes", SubHeadingFont);
-		gd.setInsets(0, 0, 0);
-		gd.addCheckbox("Extended logging for diagnosis of errors", diagnosisLogging);
-
 		gd.showDialog();
 		// show Dialog-----------------------------------------------------------------
 
@@ -232,6 +247,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		outputPNGs = gd.getNextBoolean();
 		outputJPGs = gd.getNextBoolean();
 		selectChannelOutputs = gd.getNextBoolean();
+		diagnosisLogging = gd.getNextBoolean();		
 		autoAdjustIntensities = gd.getNextBoolean();
 		percentage = gd.getNextNumber();
 		minMaxAllowedValue = gd.getNextNumber();
@@ -243,7 +259,6 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		yellowFileEnd = gd.getNextString();
 		whiteFileEnd = gd.getNextString();
 
-		diagnosisLogging = gd.getNextBoolean();
 		// read and process variables--------------------------------------------------
 		if (gd.wasCanceled())
 			return;
@@ -395,7 +410,8 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 
 				String fileList[] = new String[filesByGroup.size()];
 				String seriesList[] = new String[filesByGroup.size()];
-				String tempWellID;
+				String tempWellID, wellID;
+				boolean foundAG;
 				for (int aG = 0; aG < filesByGroup.size(); aG++) {
 					fileList[aG] = filesByGroup.get(aG).get(0);
 					
@@ -405,13 +421,33 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 						tempWellID = tempWellID.substring(0, tempWellID.length() - 1);
 					}
 
-					// Extracting the well id in the filepath (only works if file path is:
-					// <InputPath>|<well id, e.g., C5>|<imagefolder>|<zplanefolders>|<tif files for this image>
+					/*
+					 *  Extracting the well id in the filepath from a folder level up from image folder. This only works if folder structure is:
+					 *  <InputPath>|<well id, e.g., C5>|<imagefolder>|<tif files for this image>)
+					 */
 					tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
-					tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
-					tempWellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator")) + 1);
-
-					seriesList[aG] = tempWellID;						
+					wellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator")) + 1);
+					
+					// Check whether 
+					foundAG = false;
+					for (int lut = 0; lut < adjustmentLookUpTable[0].length; lut++) {
+						if (adjustmentLookUpTable[0][lut].equals(wellID)) {
+							foundAG = true;
+							break;
+						}
+					}
+					
+					if(foundAG == false) {
+						/*
+						 *  Since extracting well ID did not yield an id in adjustment group lut, we try a folder level up to find a well ID
+						 *  that is in the list. This now assumes that the folder structure is as follows:
+						 *	<InputPath>|<well id, e.g., C5>|<imagefolder>|<zplanefolders>|<tif files for this image>
+						 */
+						tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
+						wellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator")) + 1);
+					}
+					
+					seriesList[aG] = wellID;						
 				}
 
 				progress.updateTaskList(fileList, seriesList, "Adjustment Group", true);
@@ -420,6 +456,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 				allFiles = null;
 				System.gc();				
 			}else {
+				// Since no adjustment file was used, we create an individual adjustment group for each individual image
 				for(int i = 0; i < allFiles.size(); i++) {
 					filesByGroup.add(new LinkedList<String>());
 					filesByGroup.get(i).add(allFiles.get(i));
@@ -437,7 +474,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		String newFilePath;
 		File outDir;
 
-		String[] subTasksPath, subTasksPathBlue, subTasksPathGreen, subTasksPathRed, subTasksPathYellow, subTasksPathWhite;
+		String[] subTasksPathBlue, subTasksPathGreen, subTasksPathRed, subTasksPathYellow, subTasksPathWhite;
 		
 		running: while (continueProcessing) {
 			for (int aG = 0; aG < filesByGroup.size(); aG++) {
@@ -496,12 +533,38 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 					logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Determined adjustment values White: " + adjValuesWhite [0] + " | " + adjValuesWhite [1]);
 				}
 				
-				// TODO limit upper value!
+				/**
+				 * Limit lowest upper value
+				 */
+				if(adjValuesGreen[1] < minMaxAllowedValue) {
+					adjValuesGreen[1] = minMaxAllowedValue;
+					logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Corrected max adjustment value green to: " + adjValuesGreen [1]);
+				}
+				if(adjValuesBlue[1] < minMaxAllowedValue) {
+					adjValuesBlue[1] = minMaxAllowedValue;
+					logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Corrected max adjustment value blue to: " + adjValuesBlue [1]);
+				}
+				if(adjValuesRed[1] < minMaxAllowedValue) {
+					adjValuesRed[1] = minMaxAllowedValue;
+					logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Corrected max adjustment value red to: " + adjValuesRed [1]);
+				}
+				if(adjValuesYellow[1] < minMaxAllowedValue) {
+					adjValuesYellow[1] = minMaxAllowedValue;
+					logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Corrected max adjustment value green to: " + adjValuesYellow [1]);
+				}
+				if (blue_green_red_yellow_whiteOut || whiteOut) {
+					if(adjValuesWhite[1] < minMaxAllowedValue) {
+						adjValuesWhite[1] = minMaxAllowedValue;
+						logAndUpdateProgrBar("Group " + (aG + 1) + " / " + filesByGroup.size() + ": Corrected max adjustment value green to: " + adjValuesWhite [1]);
+					}
+				}
 				
 				/**
 				 * Apply values and output
 				 */
 				for(int p = 0; p < filesByGroup.get(aG).size(); p++){
+					logAndUpdateProgrBar("Adjustment Group " + (aG + 1) + " / " + filesByGroup.size() 
+						+ ": Applying adjustment and saving folder " + (p+1) + ": " + filesByGroup.get(aG).get(p));
 					try{
 						// Open images
 						impGreen = IJ.openImage(subTasksPathGreen[p]);
@@ -659,7 +722,37 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			processingDone = true;			
 			break running;
 		}
+		writeLogFile();
 		System.gc();
+	}
+
+	private void writeLogFile() {
+		TextPanel tp =new TextPanel("Log-Writing");
+		tp.append("The jpegs or pngs in this folder system have been generated with " + PLUGINNAME + ", version " + PLUGINVERSION + ".");
+		tp.append("LINK to webpage:	" + PLUGINLINK + "");
+		tp.append("Time stamp (processing finished):	" + FullDateFormatter.format(new Date()));
+		tp.append("Input folder:	" + inPath);
+		tp.append("Output folder:	" + outPath);
+		
+		tp.append("");
+		tp.append("Settings:");
+		tp.append("	Adjust intensity display range automatically:	" + autoAdjustIntensities);
+		if(autoAdjustIntensities) {
+			tp.append("	Intensity percentile:	" + percentage);
+			tp.append("	Minimum allowed maximum display value:	" + minMaxAllowedValue);
+			if(joinedAdjustment) {
+				tp.append("	Use adjustment file to auto-adjust images together:	" + joinedAdjustment);
+				tp.append("	Combining percentile:	" + mergePercentage);
+			}
+		}
+		
+		tp.append("");
+		tp.append("###################");
+		tp.append("Log from processing:");
+		tp.append("###################");
+		progress.addLogToTextPane(tp);
+		
+		tp.saveAs(outPath + System.getProperty("file.separator") + "LOG_" + PLUGINNAME + "_" + PLUGINVERSION + ".txt");		
 	}
 
 	/**
@@ -860,10 +953,40 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 				}
 			}
 
-//			if (adjustmentGroup.equals("")) {
-				// TODO eventually implement to try in this case to determine tempWell ID again by going up only one folder and not two as before
-				
-//			}
+			if (adjustmentGroup.equals("")) {
+				// Since no adjustment group was find, try to determine tempWell ID again by going up only one folder and not two as before
+				tempWellID = allFiles.get(f);
+
+				while (tempWellID.substring(tempWellID.length() - 1).equals(System.getProperty("file.separator"))) {
+					tempWellID = tempWellID.substring(0, tempWellID.length() - 1);
+					if (tempWellID.length() == 0) {
+						new WaitForUserDialog("Failed to process the list of input folders.\n"
+								+ "Are you sure the folder structure you loaded under input path is as follows?\n"
+								+ "<InputPath>|<well id, e.g., C5>|<imagefolder>|<tif files for this image>").show();
+						allFiles.clear();
+						return allFoldersByGroup;
+					}
+				}
+
+				// Extracting the well id in the filepath (only works if file path is:
+				// <InputPath>|<well id, e.g., C5>|<imagefolder>|<channel tif files for this image>)
+				tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
+				tempWellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator")) + 1);
+
+				adjustmentGroup = "";
+				for (int lut = 0; lut < adjustmentLookUpTable[0].length; lut++) {
+					if (adjustmentLookUpTable[0][lut].equals(tempWellID)) {
+						adjustmentGroup = adjustmentLookUpTable[1][lut];
+						if (diagnosisLogging) {
+							progress.notifyMessage(
+									"LOG: Found well " + tempWellID + " in look-up-table and retrieved adjustment group "
+											+ adjustmentGroup + " for it (" + allFiles.get(f) + ")",
+									ProgressDialog.LOG);
+						}
+						break;
+					}
+				}		
+			}
 			
 			if (adjustmentGroup.equals("")) {
 				progress.notifyMessage(
