@@ -1,14 +1,20 @@
 package tifCs2hpaPngJpeg_jnh;
 
 /**
- * This code was inherited from MotiQ (https://github.com/hansenjn/MotiQ) and customized,
- * @author Jan Niklas Hansen
+ * This code was inherited from MotiQ (https://github.com/hansenjn/MotiQ) and customized by
+ * @author Jan N. Hansen
  */
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
@@ -21,6 +27,7 @@ import javax.swing.ListModel;
 import javax.swing.SwingConstants;
 
 import ij.IJ;
+import ij.text.TextPanel;
 
 public class ProgressDialog extends javax.swing.JFrame implements ActionListener{
 	String dataLeft [], dataRight[], notifications [];
@@ -370,4 +377,37 @@ public class ProgressDialog extends javax.swing.JFrame implements ActionListener
 		}catch(Exception e) {			
 		}
 	}
+	
+	public void saveLog(String path){
+		if(notifications!=null){
+			final SimpleDateFormat fullDate = new SimpleDateFormat("yyyy-MM-dd	HH:mm:ss");
+			File file = new File(path);
+			try {
+				if (!file.exists()) {
+					file.createNewFile();
+				}
+				
+				FileWriter fw = new FileWriter(file.getAbsoluteFile());
+				PrintWriter pw = new PrintWriter(fw);
+				pw.println("Logfile created on:	" + fullDate.format(new Date()));
+				pw.println("");
+				for(int i = 0; i < notifications.length; i++){
+					pw.println(notifications[i]);
+				}			
+				pw.close();
+			}catch (IOException e) {
+				e.printStackTrace();
+				this.notifyMessage(e.toString(),ProgressDialog.ERROR);
+			}
+		}		
+	}
+	
+	public void addLogToTextPane(TextPanel tp){
+		if(notifications!=null){			
+			for(int i = notifications.length-1; i >= 0; i--){
+				tp.append(notifications[i]);
+			}			
+		}		
+	}
+	
 }
