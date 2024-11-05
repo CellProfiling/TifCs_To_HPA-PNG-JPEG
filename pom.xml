@@ -11,7 +11,7 @@
  
  	<artifactId>TifChannels_to_HPA_PNG_JPEG_Main_JNH</artifactId>
  	<groupId>CellProfiling</groupId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.5-SNAPSHOT</version>
  
 <!-- Plugin Information -->
     <name>TifChannels_to_HPA_PNG_JPEG_Main_JNH</name>

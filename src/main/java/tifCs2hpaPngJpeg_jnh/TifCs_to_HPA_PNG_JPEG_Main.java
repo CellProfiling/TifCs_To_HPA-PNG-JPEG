@@ -3,7 +3,7 @@ package tifCs2hpaPngJpeg_jnh;
 import java.awt.Color;
 
 /** ===============================================================================
-* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.4
+* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.5
 * 
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@ import java.awt.Color;
 * See the GNU General Public License for more details.
 *  
 * Copyright (C) Jan Niklas Hansen
-* Date: August 07, 2023 (This Version: June 16, 2024)
+* Date: August 07, 2023 (This Version: November 5, 2024)
 *   
 * For any questions please feel free to contact me (jan.hansen@scilifelab.se).
 * =============================================================================== */
@@ -50,7 +50,7 @@ import ij.text.TextPanel;
 public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	// Name variables
 	static final String PLUGINNAME = "TifChannels_to_HPA_PNG_JPEG";
-	static final String PLUGINVERSION = "0.0.4";
+	static final String PLUGINVERSION = "0.0.5";
 	static final String PLUGINLINK = "https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/";
 
 	// Fix fonts
@@ -959,7 +959,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 				}
 
 				// Extracting the well id in the filepath (only works if file path is:
-				// <InputPath>|<well id, e.g., C5>|<imagefolder>|<channel tif files for this image>)
+				// <InputPath>|<well id, e.g., C5>|<channel tif files for this image>)
 				tempWellID = tempWellID.substring(0, tempWellID.lastIndexOf(System.getProperty("file.separator")));
 				tempWellID = tempWellID.substring(tempWellID.lastIndexOf(System.getProperty("file.separator")) + 1);
 
@@ -976,6 +976,41 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 						break;
 					}
 				}		
+			}
+
+
+			// Since did not find it, try finding it by searching the path for /wellID/ or _wellID_
+			tempWellID = allFiles.get(f);
+			if (adjustmentGroup.equals("")) {
+				for (int lut = 0; lut < adjustmentLookUpTable[0].length; lut++) {
+					if (tempWellID.contains(System.getProperty("file.separator") + adjustmentLookUpTable[0][lut].equals(tempWellID) + System.getProperty("file.separator"))){
+						tempWellID = adjustmentLookUpTable[0][lut];
+						adjustmentGroup = adjustmentLookUpTable[1][lut];
+						if (diagnosisLogging) {
+							progress.notifyMessage(
+									"LOG: Found " + System.getProperty("file.separator") + tempWellID + System.getProperty("file.separator") + " in file path and " + tempWellID + "in look-up-table and retrieved adjustment group "
+											+ adjustmentGroup + " for it (" + allFiles.get(f) + ")",
+									ProgressDialog.LOG);
+						}
+						break;
+					}
+				}
+			}
+			
+			if (adjustmentGroup.equals("")) {
+				for (int lut = 0; lut < adjustmentLookUpTable[0].length; lut++) {
+					if (tempWellID.contains("_" + adjustmentLookUpTable[0][lut].equals(tempWellID) + "_")){
+						tempWellID = adjustmentLookUpTable[0][lut];
+						adjustmentGroup = adjustmentLookUpTable[1][lut];
+						if (diagnosisLogging) {
+							progress.notifyMessage(
+									"LOG: Found _" + tempWellID + "_ in file path and " + tempWellID + " in look-up-table and retrieved adjustment group "
+											+ adjustmentGroup + " for it (" + allFiles.get(f) + ")",
+									ProgressDialog.LOG);
+						}
+						break;
+					}
+				}
 			}
 			
 			if (adjustmentGroup.equals("")) {
