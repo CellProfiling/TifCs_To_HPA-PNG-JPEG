@@ -22,6 +22,18 @@ Contact: jan.hansen (at) scilifelab.se
 ## Licenses
 The plugin and the source code are published under the GNU General Public License v3.0 contained in this repository.
 
+## Archived versions and referencing
+The code and software releases of this software are archived in zenodo at the repository https://zenodo.org/records/15778558
+
+Specific versions can be cited through finding the version sepcific zenodo entry, e.g.,
+- Version v0.0.6: <a href="https://doi.org/10.5281/zenodo.17237266"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.17237266.svg" alt="doi:10.5281/zenodo.17237266"></a>
+- For more versions, browse the [zenodo records](https://zenodo.org/records/17237265).
+
+To generally cite the plugin version independent, you can refer to the general DOI including all versions:
+<p align="center">
+   <a href="https://doi.org/10.5281/zenodo.17237265"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.17237265.svg" alt="doi:10.5281/zenodo.17237265"></a>
+</p>
+
 ## How to use this plugin?
 This software is a plugin for ImageJ or FIJI (an extended version of the open-source image-analysis software ImageJ, including the BioFormats library from OME). Thus to use the plugin, you need to first have ImageJ or FIJI downloaded to your computer.
 Imagej/FIJI is freely available for download [here](https://imagej.net/downloads). 
