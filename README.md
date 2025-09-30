@@ -15,7 +15,7 @@ So this plugin ...
 
 
 ## Copyright
-(c) 2023-2024, Jan N. Hansen
+(c) 2023-2025, Jan N. Hansen
 
 Contact: jan.hansen (at) scilifelab.se
 
@@ -209,4 +209,4 @@ In Mac OS, FIJI is just a software file (FIJI.app). Right click on the FIJI icon
 
 ---
 
-(c) 2023-2024 J.N. Hansen, Cell Profiling group
+(c) 2023-2025 J.N. Hansen, Cell Profiling group
