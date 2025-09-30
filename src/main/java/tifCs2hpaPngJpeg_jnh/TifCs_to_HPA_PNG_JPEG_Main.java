@@ -3,7 +3,7 @@ package tifCs2hpaPngJpeg_jnh;
 import java.awt.Color;
 
 /** ===============================================================================
-* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.5
+* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.6
 * 
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@ import java.awt.Color;
 * See the GNU General Public License for more details.
 *  
 * Copyright (C) Jan Niklas Hansen
-* Date: August 07, 2023 (This Version: November 5, 2024)
+* Date: August 07, 2023 (This Version: September 30, 2025)
 *   
 * For any questions please feel free to contact me (jan.hansen@scilifelab.se).
 * =============================================================================== */
@@ -50,7 +50,7 @@ import ij.text.TextPanel;
 public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	// Name variables
 	static final String PLUGINNAME = "TifChannels_to_HPA_PNG_JPEG";
-	static final String PLUGINVERSION = "0.0.5";
+	static final String PLUGINVERSION = "0.0.6";
 	static final String PLUGINLINK = "https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/";
 
 	// Fix fonts
@@ -122,137 +122,177 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		// --------------------------REQUEST USER-SETTINGS-----------------------------
 		// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-		GenericDialog gd = new GenericDialog(PLUGINNAME + " - set parameters");
-		gd.addHelp(PLUGINLINK);
-//		gd.setBackground(Color.WHITE);
-				
-		//Dialog contents		
-		gd.setInsets(0, 0, 0);
-		gd.addMessage(PLUGINNAME + ", Version " + PLUGINVERSION + ", \u00a9 2023-2024 JN Hansen", SuperHeadingFont);
-		
+		while(true) {	// While loop keeps showing the dialog until a correct selection was created. 
+			GenericDialog gd = new GenericDialog(PLUGINNAME + " - set parameters");
+			gd.addHelp(PLUGINLINK);
+	//		gd.setBackground(Color.WHITE);
+					
+			//Dialog contents		
+			gd.setInsets(0, 0, 0);
+			gd.addMessage(PLUGINNAME + ", Version " + PLUGINVERSION + ", \u00a9 2023-2024 JN Hansen", SuperHeadingFont);
+			
+	
+			gd.setInsets(0, 0, 0);
+			gd.addMessage(
+					"This plugin receives a folder structure with a folder for each individual image containing single-channel tifs and outputs an identical",
+					InstructionsFont, Color.DARK_GRAY);
+			gd.setInsets(-5, 0, 0);
+			gd.addMessage("folder structure but with classical single- or multi-channel HPA-style JPEGs and PNGs instead of tif images.",
+					InstructionsFont, Color.DARK_GRAY);
+			
+			gd.setInsets(5, 0, 0);
+			gd.addMessage("I/O Settings", SubHeadingFont);
+	
+			gd.setInsets(0, 0, 0);
+			gd.addStringField("Input folder (specify filepath here):", inPath, 40);
+			gd.setInsets(0, 0, 0);
+			gd.addStringField("Output folder (specify filepath here):", outPath, 40);
+			gd.setInsets(-5, 20, 0);
+			gd.addMessage("ATTENTION: Files already existing in output folder may be automatically overwritten by this plugin (if name matches)!",
+					InstructionsFont, Color.RED);
+	
+			gd.setInsets(5, 0, 0);
+			gd.addCheckbox("Generate pngs", outputPNGs);
+			gd.setInsets(0, 0, 0);
+			gd.addCheckbox("Generate jpegs", outputJPGs);
+			gd.setInsets(0, 0, 0);
+			gd.addCheckbox(
+					"Customize channel overlays to be generated (will prompt extra customization dialog after this dialog)",
+					selectChannelOutputs);
+			gd.setInsets(5, 0, 0);
+			gd.addCheckbox("Extended logging for diagnosis / troubleshooting", diagnosisLogging);
+	
+			gd.setInsets(5, 0, 0);
+			gd.addMessage("Automatic Display Range Adjustments", SubHeadingFont);
+			gd.setInsets(0, 0, 0);
+			gd.addCheckbox("Adjust intensity display range automatically", autoAdjustIntensities);
+			gd.setInsets(0, 0, 0);
+			gd.addNumericField("-> Intensity percentile (see info below)", percentage, 3);
+			gd.setInsets(0, 0, 0);
+			gd.addNumericField("-> Minimum allowed maximum display value (see info below)", minMaxAllowedValue, 0);
+			gd.setInsets(0, 10, 0);
+			gd.addCheckbox("-> Use adjustment file to auto-adjust images together (will prompt a dialog to select file after this dialog)", joinedAdjustment);
+			gd.setInsets(0, 0, 0);
+			gd.addNumericField("--> Combining percentile (see info below)", mergePercentage, 3);
+	
+			gd.setInsets(0, 0, 0);
+			gd.addMessage(
+					"If 'Adjust ... automatically' selected, for each individual image, the upper and lower X% percentiles are determined and applied to",
+					InstructionsFont, Color.DARK_GRAY);
+			gd.setInsets(-5, 0, 0);
+			gd.addMessage(
+					"improve brightness / contrast of the images (X% is controlled by the parameter 'Intensity percentile'; e.g., if 0.01% is set as 'Intensity",
+					InstructionsFont, Color.DARK_GRAY);
+			gd.setInsets(-5, 0, 0);
+			gd.addMessage(
+					"percentile', the min display value will be determined based on the 0.01% percentile and the maximum display value will be determined",
+					InstructionsFont, Color.DARK_GRAY);
+			gd.setInsets(-5, 0, 0);
+			gd.addMessage(
+					"based on the 99.99% percentile).",
+					InstructionsFont, Color.DARK_GRAY);
+			
+			
+			gd.setInsets(0, 0, 0);
+			gd.addMessage(
+					"Use the 'Minimum allowed maximum...' parameter to limit how low the maximum display value is allowed to drop, to make sure",
+					InstructionsFont, Color.DARK_GRAY);
+			gd.setInsets(-5, 0, 0);
+			gd.addMessage(
+					"that negative-staining images are not overenhanced!",
+					InstructionsFont, Color.DARK_GRAY);
+			
+			gd.setInsets(0, 0, 0);
+			gd.addMessage(
+					"The 'Combining percentile' parameter determines how the min / max display value is computed from the percentiles of all images in",
+					InstructionsFont, Color.DARK_GRAY);
+			gd.setInsets(-5, 0, 0);
+			gd.addMessage(
+					"a group (if adjustment 'together' is chosen). E.g., when set to 50% the median will be applied. If 20% is selected, the 20% and 80%",
+					InstructionsFont, Color.DARK_GRAY);
+			gd.setInsets(-5, 0, 0);
+			gd.addMessage(
+					"percentiles will be used to merge the minimum and maximum display values, respectively.",
+					InstructionsFont, Color.DARK_GRAY);
+			
+			gd.setInsets(5, 0, 0);
+			gd.addMessage("Channel images", SubHeadingFont);
+			gd.setInsets(0, 0, 0);
+			gd.addStringField("Green channel - file ending (including .tif(f)):", greenFileEnd, 30);
+			gd.setInsets(0, 0, 0);
+			gd.addStringField("Blue channel - file ending (including .tif(f)):", blueFileEnd, 30);
+			gd.setInsets(0, 0, 0);
+			gd.addStringField("Red channel - file ending (including .tif(f)):", redFileEnd, 30);
+			gd.setInsets(0, 0, 0);
+			gd.addStringField("Yellow channel - file ending (including .tif(f)):", yellowFileEnd, 30);
+			gd.setInsets(0, 0, 0);
+			gd.addStringField("White channel (Brightfield or TI, only if applicable) - file ending (including .tif(f)):",
+					whiteFileEnd, 30);
+	
+			gd.showDialog();
+			// show Dialog-----------------------------------------------------------------
+	
+			// read and process variables--------------------------------------------------
+			inPath = gd.getNextString();
+			outPath = gd.getNextString();
+			outputPNGs = gd.getNextBoolean();
+			outputJPGs = gd.getNextBoolean();
+			selectChannelOutputs = gd.getNextBoolean();
+			diagnosisLogging = gd.getNextBoolean();		
+			autoAdjustIntensities = gd.getNextBoolean();
+			percentage = gd.getNextNumber();
+			minMaxAllowedValue = gd.getNextNumber();
+			joinedAdjustment = gd.getNextBoolean();
+			mergePercentage = gd.getNextNumber();
+			greenFileEnd = gd.getNextString();
+			blueFileEnd = gd.getNextString();
+			redFileEnd = gd.getNextString();
+			yellowFileEnd = gd.getNextString();
+			whiteFileEnd = gd.getNextString();
+	
+			// read and process variables--------------------------------------------------
+			if (gd.wasCanceled())
+				return;
+	
+			// Check whether a target folder was selected that exists:
+			boolean leave = true;
+			if(!new File(inPath).exists()) {
+				leave = false;
+				new WaitForUserDialog("The specified input file path does not exist.\nValidate the path you put!\nMake sure to correct the path to an existing path or create the specified folder!\n\nSpecified path:\n"
+						+inPath).show();
+			}
+			if(!new File(outPath).exists()) {
+				leave = false;
+				new WaitForUserDialog("The specified output file path does not exist.\nValidate the path you put!\nMake sure to correct the path to an existing path or create the specified folder!\n\nSpecified path:\n"
+					+outPath).show();
+			}
+			
+			if(percentage < 0.0) { // Intensity percentile
+				leave = false;
+				new WaitForUserDialog("The specified Intensity percentile is too low (" + percentage + ", which is <0).\nSet a percentile within range (0 to 100)!").show();
+			}
 
-		gd.setInsets(0, 0, 0);
-		gd.addMessage(
-				"This plugin receives a folder structure with a folder for each individual image containing single-channel tifs and outputs an identical",
-				InstructionsFont, Color.DARK_GRAY);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage("folder structure but with classical single- or multi-channel HPA-style JPEGs and PNGs instead of tif images.",
-				InstructionsFont, Color.DARK_GRAY);
-		
-		gd.setInsets(5, 0, 0);
-		gd.addMessage("I/O Settings", SubHeadingFont);
-
-		gd.setInsets(0, 0, 0);
-		gd.addStringField("Input folder (specify filepath here):", inPath, 40);
-		gd.setInsets(0, 0, 0);
-		gd.addStringField("Output folder (specify filepath here):", outPath, 40);
-		gd.setInsets(-5, 20, 0);
-		gd.addMessage("ATTENTION: Files already existing in output folder may be automatically overwritten by this plugin (if name matches)!",
-				InstructionsFont, Color.RED);
-
-		gd.setInsets(5, 0, 0);
-		gd.addCheckbox("Generate pngs", outputPNGs);
-		gd.setInsets(0, 0, 0);
-		gd.addCheckbox("Generate jpegs", outputJPGs);
-		gd.setInsets(0, 0, 0);
-		gd.addCheckbox(
-				"Customize channel overlays to be generated (will prompt extra customization dialog after this dialog)",
-				selectChannelOutputs);
-		gd.setInsets(5, 0, 0);
-		gd.addCheckbox("Extended logging for diagnosis / troubleshooting", diagnosisLogging);
-
-		gd.setInsets(5, 0, 0);
-		gd.addMessage("Automatic Display Range Adjustments", SubHeadingFont);
-		gd.setInsets(0, 0, 0);
-		gd.addCheckbox("Adjust intensity display range automatically", autoAdjustIntensities);
-		gd.setInsets(0, 0, 0);
-		gd.addNumericField("-> Intensity percentile (see info below)", percentage, 3);
-		gd.setInsets(0, 0, 0);
-		gd.addNumericField("-> Minimum allowed maximum display value (see info below)", minMaxAllowedValue, 0);
-		gd.setInsets(0, 10, 0);
-		gd.addCheckbox("-> Use adjustment file to auto-adjust images together (will prompt a dialog to select file after this dialog)", joinedAdjustment);
-		gd.setInsets(0, 0, 0);
-		gd.addNumericField("--> Combining percentile (see info below)", mergePercentage, 3);
-
-		gd.setInsets(0, 0, 0);
-		gd.addMessage(
-				"If 'Adjust ... automatically' selected, for each individual image, the upper and lower X% percentiles are determined and applied to",
-				InstructionsFont, Color.DARK_GRAY);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"improve brightness / contrast of the images (X% is controlled by the parameter 'Intensity percentile'; e.g., if 0.01% is set as 'Intensity",
-				InstructionsFont, Color.DARK_GRAY);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"percentile', the min display value will be determined based on the 0.01% percentile and the maximum display value will be determined",
-				InstructionsFont, Color.DARK_GRAY);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"based on the 99.99% percentile).",
-				InstructionsFont, Color.DARK_GRAY);
-		
-		
-		gd.setInsets(0, 0, 0);
-		gd.addMessage(
-				"Use the 'Minimum allowed maximum...' parameter to limit how low the maximum display value is allowed to drop, to make sure",
-				InstructionsFont, Color.DARK_GRAY);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"that negative-staining images are not overenhanced!",
-				InstructionsFont, Color.DARK_GRAY);
-		
-		gd.setInsets(0, 0, 0);
-		gd.addMessage(
-				"The 'Combining percentile' parameter determines how the min / max display value is computed from the percentiles of all images in",
-				InstructionsFont, Color.DARK_GRAY);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"a group (if adjustment 'together' is chosen). E.g., when set to 50% the median will be applied. If 20% is selected, the 20% and 80%",
-				InstructionsFont, Color.DARK_GRAY);
-		gd.setInsets(-5, 0, 0);
-		gd.addMessage(
-				"percentiles will be used to merge the minimum and maximum display values, respectively.",
-				InstructionsFont, Color.DARK_GRAY);
-		
-		gd.setInsets(5, 0, 0);
-		gd.addMessage("Channel images", SubHeadingFont);
-		gd.setInsets(0, 0, 0);
-		gd.addStringField("Green channel - file ending (including .tif(f)):", greenFileEnd, 30);
-		gd.setInsets(0, 0, 0);
-		gd.addStringField("Blue channel - file ending (including .tif(f)):", blueFileEnd, 30);
-		gd.setInsets(0, 0, 0);
-		gd.addStringField("Red channel - file ending (including .tif(f)):", redFileEnd, 30);
-		gd.setInsets(0, 0, 0);
-		gd.addStringField("Yellow channel - file ending (including .tif(f)):", yellowFileEnd, 30);
-		gd.setInsets(0, 0, 0);
-		gd.addStringField("White channel (Brightfield or TI, only if applicable) - file ending (including .tif(f)):",
-				whiteFileEnd, 30);
-
-		gd.showDialog();
-		// show Dialog-----------------------------------------------------------------
-
-		// read and process variables--------------------------------------------------
-		inPath = gd.getNextString();
-		outPath = gd.getNextString();
-		outputPNGs = gd.getNextBoolean();
-		outputJPGs = gd.getNextBoolean();
-		selectChannelOutputs = gd.getNextBoolean();
-		diagnosisLogging = gd.getNextBoolean();		
-		autoAdjustIntensities = gd.getNextBoolean();
-		percentage = gd.getNextNumber();
-		minMaxAllowedValue = gd.getNextNumber();
-		joinedAdjustment = gd.getNextBoolean();
-		mergePercentage = gd.getNextNumber();
-		greenFileEnd = gd.getNextString();
-		blueFileEnd = gd.getNextString();
-		redFileEnd = gd.getNextString();
-		yellowFileEnd = gd.getNextString();
-		whiteFileEnd = gd.getNextString();
-
-		// read and process variables--------------------------------------------------
-		if (gd.wasCanceled())
-			return;
-
+			if(percentage > 100.0) { // Intensity percentile
+				leave = false;
+				new WaitForUserDialog("The specified Intensity percentile is too high (" + percentage + ", which is >100).\nSet a percentile within range (0 to 100)!").show();
+			}
+			
+			if(mergePercentage < 0.0) { // Combining percentile
+				leave = false;
+				new WaitForUserDialog("The specified 'Combining percentile' is too low (" + mergePercentage + ", which is <0).\nSet a Combining percentile within range (0 to 100)!").show();
+			}
+			
+			if(mergePercentage > 100.0) { // Combining percentile
+				leave = false;
+				new WaitForUserDialog("The specified 'Combining percentile' is too high (" + mergePercentage + ", which is >100).\nSet a Combining percentile within range (0 to 100)!").show();
+			}
+			
+			// Additional validation checks can be added here
+			
+			if(leave) {
+				break;
+			}
+		}
 		if (selectChannelOutputs) {
 			GenericDialog gd2 = new GenericDialog(PLUGINNAME + " - set parameters");
 
@@ -1207,9 +1247,9 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	private double [] getAdjustmentValuesFromGroupedImages(String[] filePaths, double percentage, double mergingPercentage) {
 		double adjValues [][] = getSortedPercentageRangesForGroupedImages(filePaths, percentage);
 		
-		return new double [] {adjValues[0][(int)Math.round((double) adjValues[0].length*mergingPercentage/100.0)-1],
-				adjValues[1][(int)Math.round((double) adjValues[1].length*(100.0-mergingPercentage)/100.0)-1]};
-		
+	    int lowerIndex = Math.max(0, (int)Math.round((double) adjValues[0].length*mergingPercentage/100.0)-1);
+	    int upperIndex = Math.min(adjValues[1].length-1, (int)Math.round((double) adjValues[1].length*(100.0-mergingPercentage)/100.0)-1);
+	    return new double[] {adjValues[0][lowerIndex], adjValues[1][upperIndex]};
 	}
 
 	private void outputImage(CompositeImage imp, String fileType, String fileEnding, String dir, String namePrefix) {
