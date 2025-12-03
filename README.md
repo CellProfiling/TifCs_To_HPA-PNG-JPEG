@@ -27,6 +27,7 @@ The code and software releases of this software are archived in zenodo at the re
 
 Specific versions can be cited through finding the version sepcific zenodo entry, e.g.,
 - Version v0.0.6: <a href="https://doi.org/10.5281/zenodo.17237266"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.17237266.svg" alt="doi:10.5281/zenodo.17237266"></a>
+- Version v0.0.7: <a href="https://doi.org/10.5281/zenodo.17798002"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.17798002.svg" alt="doi:10.5281/zenodo.17798002"></a>
 - For more versions, browse the [zenodo records](https://zenodo.org/records/17237265).
 
 To generally cite the plugin version independent, you can refer to the general DOI including all versions:
