@@ -3,7 +3,7 @@ package tifCs2hpaPngJpeg_jnh;
 import java.awt.Color;
 
 /** ===============================================================================
-* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.6
+* TifChannels_to_HPA_PNG_JPEG_Main_JNH ImageJ/FIJI Plugin v0.0.7
 * 
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@ import java.awt.Color;
 * See the GNU General Public License for more details.
 *  
 * Copyright (C) Jan Niklas Hansen
-* Date: August 07, 2023 (This Version: September 30, 2025)
+* Date: August 07, 2023 (This Version: December 2, 2025)
 *   
 * For any questions please feel free to contact me (jan.hansen@scilifelab.se).
 * =============================================================================== */
@@ -50,7 +50,7 @@ import ij.text.TextPanel;
 public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 	// Name variables
 	static final String PLUGINNAME = "TifChannels_to_HPA_PNG_JPEG";
-	static final String PLUGINVERSION = "0.0.6";
+	static final String PLUGINVERSION = "0.0.7";
 	static final String PLUGINLINK = "https://github.com/CellProfiling/TifCs_To_HPA-PNG-JPEG/";
 
 	// Fix fonts
@@ -243,6 +243,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 			percentage = gd.getNextNumber();
 			minMaxAllowedValue = gd.getNextNumber();
 			joinedAdjustment = gd.getNextBoolean();
+			if(!autoAdjustIntensities) joinedAdjustment = false;
 			mergePercentage = gd.getNextNumber();
 			greenFileEnd = gd.getNextString();
 			blueFileEnd = gd.getNextString();
@@ -367,7 +368,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 		String tableFileDir = "";
 		String tableFileName = "";
 		String[][] adjustmentLookUpTable = null;
-		if (joinedAdjustment) {
+		if (autoAdjustIntensities && joinedAdjustment) {
 			// Open a file open dialog to load a csv file containing information on the
 			// wells that should be adjusted together
 			new WaitForUserDialog(
@@ -432,7 +433,7 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 						+ "Are you sure you set the filename ending parameters correctly for all channels?");
 			}
 
-			if (joinedAdjustment) {
+			if (autoAdjustIntensities && joinedAdjustment) {
 				filesByGroup = getFolderListsByAdjustmentGroups(allFiles, adjustmentLookUpTable, progress, diagnosisLogging);
 				if (filesByGroup.size() == 0) {
 					return;
@@ -484,13 +485,42 @@ public class TifCs_to_HPA_PNG_JPEG_Main implements PlugIn {
 				
 				allFiles.clear();
 				allFiles = null;
-				System.gc();				
-			}else {
+				System.gc();	
+				
+			}else{
+				if (diagnosisLogging) {
+					progress.notifyMessage(
+							"Creating folder specific tasks: " + allFiles.size() + "",
+							ProgressDialog.LOG);
+				}
 				// Since no adjustment file was used, we create an individual adjustment group for each individual image
 				for(int i = 0; i < allFiles.size(); i++) {
 					filesByGroup.add(new LinkedList<String>());
 					filesByGroup.get(i).add(allFiles.get(i));
 				}
+				if (diagnosisLogging) {
+					progress.notifyMessage(
+							"Filegroup count: " + filesByGroup.size() + "",
+							ProgressDialog.LOG);
+				}
+				
+				if (filesByGroup.size() == 0) {
+					return;
+				}
+
+				String fileList[] = new String[filesByGroup.size()];
+				String seriesList[] = new String[filesByGroup.size()];
+				for (int aG = 0; aG < filesByGroup.size(); aG++) {
+					fileList[aG] = filesByGroup.get(aG).get(0);
+					seriesList[aG] = "" + aG;						
+				}
+
+				progress.updateTaskList(fileList, seriesList, "Adjustment Group", true);
+				
+				allFiles.clear();
+				allFiles = null;
+				System.gc();	
+				
 			}
 		}
 
